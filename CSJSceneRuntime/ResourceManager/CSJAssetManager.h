@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "CSJRenderObjectData.h"
+#include "CSJSceneRuntime/function/framework/render/CSJRenderObjectData.h"
 
 class CSJAssetManager {
 public:

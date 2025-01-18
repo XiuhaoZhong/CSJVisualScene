@@ -1,8 +1,12 @@
 #include "mainwindow.h"
 
 #include <QPushButton>
+#include <QHBoxLayout>
 
-#include "UIModules/CSJSceneRenderWindow.h"
+#include "CSJSceneEditor/CSJSceneEditorWindow.h"
+
+#include "CSJSceneRuntime/CSJSceneEngine.h"
+#include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
@@ -14,7 +18,12 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initUI() {
-    setFixedSize(1280, 960);
+    setFixedSize(1080, 720);
+    
+    // CSJSceneEngineWindow *engineWindow = new CSJSceneEngineWindow();
+    // QWidget *renderWidget = QWidget::createWindowContainer(engineWindow);
+    // QLayout *layout = this->layout();//new QHBoxLayout(this);
+    // layout->addWidget(renderWidget);
 
     QPushButton *sceneButton = new QPushButton(this);
     sceneButton->setText("Open a Scene");
@@ -22,6 +31,6 @@ void MainWindow::initUI() {
 }
 
 void MainWindow::showSceneRenderWindow() {
-    CSJSceneRenderWindow* sceneRenderWindow = new CSJSceneRenderWindow();
+    CSJSceneEditorWindow* sceneRenderWindow = new CSJSceneEditorWindow();
     sceneRenderWindow->show();
 }

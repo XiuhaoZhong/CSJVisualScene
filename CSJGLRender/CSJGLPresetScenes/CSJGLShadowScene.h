@@ -11,7 +11,7 @@ class CSJRenderEntity {
 
 class CSJGLShadowScene : public CSJGLSceneBase {
 public:
-    CSJGLShadowScene(QOpenGLWidget *contextWidget);
+    CSJGLShadowScene();
     ~CSJGLShadowScene();
 
     bool initScene(int width, int height) override;
@@ -21,14 +21,14 @@ public:
 
 private:
 
-    QOpenGLFramebufferObject    *m_shadowFramebuffer = nullptr;
-    QOpenGLTexture              *m_shadowTex;
-    QOpenGLShaderProgram         m_shadowProgram;
+    // QOpenGLFramebufferObject    *m_shadowFramebuffer = nullptr;
+    // QOpenGLTexture              *m_shadowTex;
+    // QOpenGLShaderProgram         m_shadowProgram;
 
-    std::array<CSJSpGLBuffer, 4> m_bufferArray;
-    CSJSpGLBuffer                m_torusIndexBuffer;    
+    // std::array<CSJSpGLBuffer, 4> m_bufferArray;
+    // CSJSpGLBuffer                m_torusIndexBuffer;    
 
-    QOpenGLShaderProgram         m_renderProgram;
+    // QOpenGLShaderProgram         m_renderProgram;
 
     // shape positions;
     glm::vec3 m_torusPos;
