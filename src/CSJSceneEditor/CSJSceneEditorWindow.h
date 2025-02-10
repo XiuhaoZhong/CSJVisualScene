@@ -2,7 +2,6 @@
 #define __CSJSCENERENDERWINDOW_H__
 
 #include <memory>
-
 #include <QWidget>
 
 class CSJSceneEditorWindow : public QWidget {

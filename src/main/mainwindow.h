@@ -13,6 +13,5 @@ public:
     void initUI();
 
 protected slots:
-    void showSceneRenderWindow();
 };
 #endif // MAINWINDOW_H

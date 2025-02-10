@@ -11,7 +11,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdParts)
+set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParts)
 
 set(JSON_INCLUDE ${THIRD_PARTY_DIR}/json11)
 add_library(json11 ${JSON_INCLUDE}/json11.cpp)
@@ -27,25 +28,23 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core Gui)
 
 set(PROJECT_SOURCES
-    main/main.cpp
-    main/mainwindow.cpp
-    main/mainwindow.h
-    CSJSceneEditor/CSJWrapperWidget.h
-    CSJSceneEditor/CSJWrapperWidget.cc
-    CSJSceneEditor/CSJSceneEditorWindow.h
-    CSJSceneEditor/CSJSceneEditorWindow.cpp
+    src/main/main.cpp
+    src/main/mainwindow.cpp
+    src/main/mainwindow.h
+    src/CSJSceneEditor/CSJSceneEditorWindow.h
+    src/CSJSceneEditor/CSJSceneEditorWindow.cpp
 )
 
 set(CSJGL_SOURCES
-    CSJGLRender/CSJGLSceneBase.h
-    CSJGLRender/CSJGLSceneBase.cpp
-    CSJGLRender/CSJGLPresetScenes/CSJGLShadowScene.h
-    CSJGLRender/CSJGLPresetScenes/CSJGLShadowScene.cpp
+    src/CSJGLRender/CSJGLSceneBase.h
+    src/CSJGLRender/CSJGLSceneBase.cpp
+    src/CSJGLRender/CSJGLPresetScenes/CSJGLShadowScene.h
+    src/CSJGLRender/CSJGLPresetScenes/CSJGLShadowScene.cpp
 )
 
-file(GLOB_RECURSE RUNTIME_SOURCE_FILE "CSJSceneRuntime/*")
+file(GLOB_RECURSE RUNTIME_SOURCE_FILE "${ROOT_DIR}/src/CSJSceneRuntime/*")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} 3rdParts)
+include_directories(${ROOT_DIR}/src ${THIRD_PARTY_DIR})
 
 if(WIN32)
 set(vulkan_lib )
@@ -88,11 +87,9 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 )
 
 target_link_libraries(${TARGET_NAME} PRIVATE ${vulkan_lib})
-
 target_link_libraries(${TARGET_NAME} PRIVATE Qt::Widgets 
                                              Qt::Core
                                              Qt::Gui)
-
 target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
 
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUDE}>)

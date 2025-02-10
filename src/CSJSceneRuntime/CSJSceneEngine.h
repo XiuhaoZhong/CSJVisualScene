@@ -9,7 +9,6 @@
 #include "CSJGLRender/CSJGLSceneBase.h"
 
 class CSJSceneEngine : public QVulkanWindowRenderer {
-    //Q_OBJECT
 public:
     CSJSceneEngine(QVulkanWindow *window);
     ~CSJSceneEngine();
