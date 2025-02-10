@@ -11,6 +11,7 @@
 
 ## 项目结构
 CSJVisualScene
-├── src/ 源代码
-├── CMakeLists.txt 项目配置文件
-├── README.md 项目说明文件
+├── src/           # 源代码
+├── CMakeLists.txt # 项目配置文件
+├── Resources      # 资源文件
+├── README.md      # 项目说明文件
