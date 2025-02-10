@@ -10,8 +10,11 @@
 4. 支持图形交互，如缩放、位移、旋转等等操作
 
 ## 项目结构
-CSJVisualScene
-├── src/           # 源代码
-├── CMakeLists.txt # 项目配置文件
-├── Resources      # 资源文件
-├── README.md      # 项目说明文件
+```
+CSJVisualScene/
+├── src/                # 源代码目录
+├── Resources/          # 资源文件
+├── README.md           # 项目说明文件
+├── CMakeLists.txt      # 项目配置文件
+└── LICENSE             # 许可证文件
+```
