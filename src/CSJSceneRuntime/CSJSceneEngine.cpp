@@ -5,6 +5,8 @@
 #include <QDebug>
 #include <vulkan/vulkan_core.h>
 
+#include "stbi/stb_image.h"
+
 struct UniformBufferObject {
     glm::mat4 model;
     glm::mat4 view;
@@ -74,6 +76,8 @@ void CSJSceneEngine::initResources() {
     m_pFunctions = m_pWindow->vulkanInstance()->deviceFunctions(device);
     m_pVulkanFunctions = m_pWindow->vulkanInstance()->functions();
     m_max_frames_in_flight = m_pWindow->concurrentFrameCount();
+
+    createImageResources();
 }
 
 void CSJSceneEngine::initSwapChainResources() {
@@ -337,7 +341,7 @@ void CSJSceneEngine::createImageRenderPipeline() {
     pipelineInfo.pColorBlendState    = &colorBlending;
     pipelineInfo.pDynamicState       = &dynamicState;
     pipelineInfo.layout              = m_image_pipeline_layout;
-    pipelineInfo.renderPass          = m_pWindow->defaultRenderPass();
+    pipelineInfo.renderPass          = m_main_render_pass;
     pipelineInfo.subpass             = 0;
     pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
 
@@ -349,12 +353,53 @@ void CSJSceneEngine::createImageRenderPipeline() {
 
     m_pFunctions->vkDestroyShaderModule(m_pWindow->device(), fragShaderModule, nullptr);
     m_pFunctions->vkDestroyShaderModule(m_pWindow->device(), vertShaderModule, nullptr);
-
 }
 
-void CSJSceneEngine::startNextFrame() {
-    VkDevice device = m_pWindow->device();
-    VkCommandBuffer commandBuffer = m_pWindow->currentCommandBuffer();
+void CSJSceneEngine::createMainRenderPass() {
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format          = m_pWindow->colorFormat();
+    colorAttachment.samples         = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp          = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp         = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp  = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; 
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments    = &colorAttachmentRef;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass    = 0;
+    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments    = &colorAttachment;
+    renderPassInfo.subpassCount    = 1;
+    renderPassInfo.pSubpasses      = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies   = &dependency;
+
+    if (m_pFunctions->vkCreateRenderPass(m_pWindow->device(), &renderPassInfo, nullptr, &m_main_render_pass) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create render pass!");
+    }
+}
+
+void CSJSceneEngine::drawImage(VkCommandBuffer commandBuffer, int index) {
+    updateUniformBuffer(index);
+
     const QSize frameSize = m_pWindow->swapChainImageSize();
 
     VkClearColorValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -367,7 +412,7 @@ void CSJSceneEngine::startNextFrame() {
 
     VkRenderPassBeginInfo passBeginInfo{};
     passBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    passBeginInfo.renderPass = m_pWindow->defaultRenderPass();
+    passBeginInfo.renderPass = m_main_render_pass;
     passBeginInfo.framebuffer = m_pWindow->currentFramebuffer();
     passBeginInfo.renderArea.extent.width = frameSize.width();
     passBeginInfo.renderArea.extent.height = frameSize.height();
@@ -375,6 +420,8 @@ void CSJSceneEngine::startNextFrame() {
     passBeginInfo.pClearValues = clearValues;
     VkCommandBuffer cmdBuffer = m_pWindow->currentCommandBuffer();
     m_pFunctions->vkCmdBeginRenderPass(cmdBuffer, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    m_pFunctions->vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_image_pipeline);
 
     VkViewport viewPort{};
     viewPort.x = viewPort.y = 0;
@@ -390,10 +437,163 @@ void CSJSceneEngine::startNextFrame() {
     scissor.extent.height = viewPort.height;
     m_pFunctions->vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+    VkBuffer vertexBuffers[] = {
+        m_vertex_buffer
+    };
+    VkDeviceSize offsets[] = {0};
+    m_pFunctions->vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    m_pFunctions->vkCmdBindIndexBuffer(commandBuffer, m_index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    m_pFunctions->vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                                          m_image_pipeline_layout, 0, 1, &m_image_descriptor_sets[index], 0, nullptr);
+    
+    m_pFunctions->vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
     m_pFunctions->vkCmdEndRenderPass(commandBuffer);
+}
+
+void CSJSceneEngine::updateUniformBuffer(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model    = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view     = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    float aspect = (float) m_pWindow->swapChainImageSize().width() / (float) m_pWindow->swapChainImageSize().height();
+    ubo.proj     = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    memcpy(m_image_uniform_buffer_mappeds[currentImage % m_max_frames_in_flight], &ubo, sizeof(ubo));
+}
+
+void CSJSceneEngine::createVertexBuffer() {
+    std::vector<Vertex> current_vertices = vertices;
+    VkDeviceSize bufferSize = sizeof(current_vertices[0]) * current_vertices.size();
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, 
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer,
+                 stagingBufferMemory);
+
+    void *data;
+    m_pFunctions->vkMapMemory(m_pWindow->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, current_vertices.data(), (size_t)bufferSize);
+    m_pFunctions->vkUnmapMemory(m_pWindow->device(), stagingBufferMemory);
+
+    createBuffer(bufferSize, 
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 m_vertex_buffer,
+                 m_vertex_buffer_memory);
+    
+    copyBuffer(stagingBuffer, m_vertex_buffer, bufferSize);
+
+    m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
+    m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
+}
+
+void CSJSceneEngine::createIndexBuffer() {
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer, stagingBufferMemory);
+
+    void *data;
+    m_pFunctions->vkMapMemory(m_pWindow->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), (size_t)bufferSize);
+    m_pFunctions->vkUnmapMemory(m_pWindow->device(), stagingBufferMemory);
+
+    createBuffer(bufferSize, 
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 m_index_buffer, m_index_buffer_memory);
+
+    copyBuffer(stagingBuffer, m_index_buffer, bufferSize);
+
+    m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
+    m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
+}
+
+void CSJSceneEngine::createTextureImage() {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load("resources/originImages/slamDumk_images/cross_street.jpeg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    m_pFunctions->vkMapMemory(m_pWindow->device(), stagingBufferMemory, 0, imageSize, 0, &data);
+    memcpy(data, pixels, static_cast<size_t>(imageSize));
+    m_pFunctions->vkUnmapMemory(m_pWindow->device(), stagingBufferMemory);
+    stbi_image_free(pixels);
+
+    createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+                m_image_texture_image, m_image_texture_image_memory);
+
+    transitionImageLayout(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, 
+                          VK_IMAGE_LAYOUT_UNDEFINED, 
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    copyBufferToImage(stagingBuffer, m_image_texture_image, 
+                      static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    transitionImageLayout(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, 
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
+    m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
+}
+
+void CSJSceneEngine::createImageResources() {
+    createMainRenderPass();
+    createDescriptorSetLayout();
+    createImageRenderPipeline();
+    createTextureImage();
+    createImageTextureImageView();
+    createImageUniformBuffers();
+    createVertexBuffer();
+    createIndexBuffer();
+    createDescriptorPool();
+    createDescriptorSets();
+}
+
+void CSJSceneEngine::startNextFrame() {
+    VkDevice device = m_pWindow->device();
+    VkCommandBuffer commandBuffer = m_pWindow->currentCommandBuffer();
+
+    drawImage(commandBuffer, m_pWindow->currentSwapChainImageIndex());
 
     m_pWindow->frameReady();
     m_pWindow->requestUpdate();
+}
+
+uint32_t CSJSceneEngine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    m_pVulkanFunctions->vkGetPhysicalDeviceMemoryProperties(m_pWindow->physicalDevice(), &memProperties);
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && 
+            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("failed to find suitable memory type!");
 }
 
 void CSJSceneEngine::createBuffer(VkDeviceSize size, 
@@ -426,17 +626,146 @@ void CSJSceneEngine::createBuffer(VkDeviceSize size,
     m_pFunctions->vkBindBufferMemory(m_pWindow->device(), buffer, bufferMemory, 0);
 }
 
-uint32_t CSJSceneEngine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    m_pVulkanFunctions->vkGetPhysicalDeviceMemoryProperties(m_pWindow->physicalDevice(), &memProperties);
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && 
-            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
+void CSJSceneEngine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = m_pWindow->graphicsCommandPool();
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    m_pFunctions->vkAllocateCommandBuffers(m_pWindow->device(), &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    m_pFunctions->vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+    m_pFunctions->vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    m_pFunctions->vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers    = &commandBuffer;
+
+    m_pFunctions->vkQueueSubmit(m_pWindow->graphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+    m_pFunctions->vkQueueWaitIdle(m_pWindow->graphicsQueue());
+
+    m_pFunctions->vkFreeCommandBuffers(m_pWindow->device(), m_pWindow->graphicsCommandPool(), 1, &commandBuffer);
+}
+
+void CSJSceneEngine::copyBufferToImage(VkBuffer buffer, VkImage image,
+                                       uint32_t width, uint32_t height) {
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+        width,
+        height,
+        1
+    };
+
+    m_pFunctions->vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    endSingleTimeCommands(commandBuffer);
+}
+
+void CSJSceneEngine::transitionImageLayout(VkImage image, VkFormat format,
+                                           VkImageLayout oldLayout, VkImageLayout newLayout) {
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout                       = oldLayout;
+    barrier.newLayout                       = newLayout;
+    barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image                           = image;
+    barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel   = 0;
+    barrier.subresourceRange.levelCount     = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount     = 1;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
 
-    throw std::runtime_error("failed to find suitable memory type!");
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else {
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+
+    m_pFunctions->vkCmdPipelineBarrier(commandBuffer,
+                                       sourceStage, 
+                                       destinationStage,
+                                       0,0, nullptr,0,
+                                       nullptr,1, &barrier);
+
+    endSingleTimeCommands(commandBuffer);
+}
+
+VkCommandBuffer CSJSceneEngine::beginSingleTimeCommands() {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = m_pWindow->graphicsCommandPool();
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    m_pFunctions->vkAllocateCommandBuffers(m_pWindow->device(), &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    m_pFunctions->vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer; 
+}
+
+void CSJSceneEngine::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+    m_pFunctions->vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    m_pFunctions->vkQueueSubmit(m_pWindow->graphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+    m_pFunctions->vkQueueWaitIdle(m_pWindow->graphicsQueue());
+
+    m_pFunctions->vkFreeCommandBuffers(m_pWindow->device(), m_pWindow->graphicsCommandPool(), 1, &commandBuffer);
 }
 
 void CSJSceneEngine::createImageTextureSampler() {
@@ -463,7 +792,7 @@ void CSJSceneEngine::createImageTextureSampler() {
     }
 }
 
-void CSJSceneEngine::createimageTextureImageView() {
+void CSJSceneEngine::createImageTextureImageView() {
     m_image_texture_imageview = createImageView(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB);
 }
 

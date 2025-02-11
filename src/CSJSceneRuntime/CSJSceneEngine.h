@@ -29,8 +29,17 @@ protected:
     void createDescriptorSetLayout();
     void createDescriptorSets();
     void createImageRenderPipeline();
-    void createimageTextureImageView();
+    void createImageTextureImageView();
     void createImageTextureSampler();
+    void createImageResources();   
+                    
+    void createVertexBuffer();
+    void createIndexBuffer();
+    void createTextureImage();
+    void createMainRenderPass();
+
+    void drawImage(VkCommandBuffer commandBuffer, int index);
+    void updateUniformBuffer(uint32_t currentImage);
 
     VkImageView createImageView(VkImage image, VkFormat format);
     void createImage(uint32_t width, uint32_t height, 
@@ -44,6 +53,17 @@ protected:
                       VkMemoryPropertyFlags properties, 
                       VkBuffer &buffer, 
                       VkDeviceMemory &bufferMemory);
+
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    void copyBufferToImage(VkBuffer buffer, VkImage image,
+                           uint32_t width, uint32_t height);
+
+    void transitionImageLayout(VkImage image, VkFormat format,
+                               VkImageLayout oldLayout, VkImageLayout newLayout);
+
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 private:
     QVulkanWindow          *m_pWindow;
     QVulkanFunctions       *m_pVulkanFunctions;
@@ -54,8 +74,14 @@ private:
     std::vector<VkDeviceMemory>  m_image_uniform_buffer_memories;
     std::vector<void *>          m_image_uniform_buffer_mappeds;
 
-    VkSampler                    m_image_texture_sampler;
+    VkBuffer                     m_vertex_buffer;
+    VkDeviceMemory               m_vertex_buffer_memory;
+    VkBuffer                     m_index_buffer;
+    VkDeviceMemory               m_index_buffer_memory;
     VkImage                      m_image_texture_image;
+    VkDeviceMemory               m_image_texture_image_memory;
+
+    VkSampler                    m_image_texture_sampler;
     VkImageView                  m_image_texture_imageview;
 
     std::vector<VkDescriptorSet> m_image_descriptor_sets; 
@@ -63,6 +89,7 @@ private:
     VkDescriptorPool             m_image_descriptor_pool;
     VkPipelineLayout             m_image_pipeline_layout;
     VkPipeline                   m_image_pipeline;
+    VkRenderPass                 m_main_render_pass;
 };
 
 using CSJSpGLRenderWidget = std::shared_ptr<CSJSceneEngine>;
