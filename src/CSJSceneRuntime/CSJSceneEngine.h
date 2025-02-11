@@ -5,6 +5,7 @@
 
 #include <QVulkanWindow>
 #include <QVulkanDeviceFunctions>
+#include <vulkan/vulkan_core.h>
 
 #include "CSJGLRender/CSJGLSceneBase.h"
 
@@ -21,10 +22,47 @@ public:
     void startNextFrame() override;
 
 protected:
-    
+    std::vector<char> readFile(const std::string &filename);
+    VkShaderModule createShaderModule(const std::vector<char> &code);
+    void createImageUniformBuffers();
+    void createDescriptorPool();
+    void createDescriptorSetLayout();
+    void createDescriptorSets();
+    void createImageRenderPipeline();
+    void createimageTextureImageView();
+    void createImageTextureSampler();
+
+    VkImageView createImageView(VkImage image, VkFormat format);
+    void createImage(uint32_t width, uint32_t height, 
+                     VkFormat format, VkImageTiling tiling, 
+                     VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+                     VkImage &image, VkDeviceMemory &imageMemory);
+
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    void createBuffer(VkDeviceSize size, 
+                      VkBufferUsageFlags usage, 
+                      VkMemoryPropertyFlags properties, 
+                      VkBuffer &buffer, 
+                      VkDeviceMemory &bufferMemory);
 private:
-    QVulkanWindow *m_pWindow;
+    QVulkanWindow          *m_pWindow;
+    QVulkanFunctions       *m_pVulkanFunctions;
     QVulkanDeviceFunctions *m_pFunctions;
+    uint32_t                m_max_frames_in_flight;
+
+    std::vector<VkBuffer>        m_image_uniform_buffers;
+    std::vector<VkDeviceMemory>  m_image_uniform_buffer_memories;
+    std::vector<void *>          m_image_uniform_buffer_mappeds;
+
+    VkSampler                    m_image_texture_sampler;
+    VkImage                      m_image_texture_image;
+    VkImageView                  m_image_texture_imageview;
+
+    std::vector<VkDescriptorSet> m_image_descriptor_sets; 
+    VkDescriptorSetLayout        m_image_descriptorset_layout;
+    VkDescriptorPool             m_image_descriptor_pool;
+    VkPipelineLayout             m_image_pipeline_layout;
+    VkPipeline                   m_image_pipeline;
 };
 
 using CSJSpGLRenderWidget = std::shared_ptr<CSJSceneEngine>;
