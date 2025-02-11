@@ -7,6 +7,8 @@
 
 #include "stbi/stb_image.h"
 
+static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
 struct UniformBufferObject {
     glm::mat4 model;
     glm::mat4 view;
@@ -63,6 +65,7 @@ const std::vector<uint16_t> indices = {
 CSJSceneEngine::CSJSceneEngine(QVulkanWindow* window)
     : m_pWindow(window) {
     
+        m_isInit = false;
 }
 
 CSJSceneEngine::~CSJSceneEngine() {
@@ -75,17 +78,24 @@ void CSJSceneEngine::initResources() {
     VkDevice device = m_pWindow->device();
     m_pFunctions = m_pWindow->vulkanInstance()->deviceFunctions(device);
     m_pVulkanFunctions = m_pWindow->vulkanInstance()->functions();
-    m_max_frames_in_flight = m_pWindow->concurrentFrameCount();
-
-    createImageResources();
 }
 
 void CSJSceneEngine::initSwapChainResources() {
     qDebug() << "initSwapChainReousrces!";
+    m_max_frames_in_flight = m_pWindow->swapChainImageCount();
+
+    if (!m_isInit) {
+        createImageResources();
+        m_isInit = true;
+    }
+
+    createFramebuffers();
 }
 
 void CSJSceneEngine::releaseSwapChainResources() {
     qDebug() << "releaseSwapChainResources!";
+
+    releaseFramebuffers();
 }
 
 void CSJSceneEngine::releaseResources() {
@@ -355,6 +365,41 @@ void CSJSceneEngine::createImageRenderPipeline() {
     m_pFunctions->vkDestroyShaderModule(m_pWindow->device(), vertShaderModule, nullptr);
 }
 
+void CSJSceneEngine::createFramebuffers() {
+    int swapChainSize = m_pWindow->swapChainImageCount();
+    m_framebuffers.resize(swapChainSize);
+
+    for (size_t i = 0; i < swapChainSize; i++) {
+        VkImageView attachments[] = {
+            m_pWindow->swapChainImageView(i)
+        };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_main_render_pass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = m_pWindow->swapChainImageSize().width();
+        framebufferInfo.height = m_pWindow->swapChainImageSize().height();
+        framebufferInfo.layers = 1;
+
+        if (m_pFunctions->vkCreateFramebuffer(m_pWindow->device(), &framebufferInfo, nullptr, 
+                                &m_framebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create frame buffer!");
+        }
+    }
+}
+
+void CSJSceneEngine::releaseFramebuffers() {
+    if (m_framebuffers.size() == 0) {
+        return ;
+    }
+
+    for (auto framebuffer : m_framebuffers) {
+        m_pFunctions->vkDestroyFramebuffer(m_pWindow->device(), framebuffer, nullptr);
+    }
+}
+
 void CSJSceneEngine::createMainRenderPass() {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format          = m_pWindow->colorFormat();
@@ -413,7 +458,7 @@ void CSJSceneEngine::drawImage(VkCommandBuffer commandBuffer, int index) {
     VkRenderPassBeginInfo passBeginInfo{};
     passBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     passBeginInfo.renderPass = m_main_render_pass;
-    passBeginInfo.framebuffer = m_pWindow->currentFramebuffer();
+    passBeginInfo.framebuffer = m_framebuffers[m_pWindow->currentSwapChainImageIndex()];
     passBeginInfo.renderArea.extent.width = frameSize.width();
     passBeginInfo.renderArea.extent.height = frameSize.height();
     passBeginInfo.clearValueCount = 2;
@@ -465,7 +510,7 @@ void CSJSceneEngine::updateUniformBuffer(uint32_t currentImage) {
     ubo.proj     = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    memcpy(m_image_uniform_buffer_mappeds[currentImage % m_max_frames_in_flight], &ubo, sizeof(ubo));
+    memcpy(m_image_uniform_buffer_mappeds[currentImage], &ubo, sizeof(ubo));
 }
 
 void CSJSceneEngine::createVertexBuffer() {
@@ -566,6 +611,7 @@ void CSJSceneEngine::createImageResources() {
     createImageRenderPipeline();
     createTextureImage();
     createImageTextureImageView();
+    createImageTextureSampler();
     createImageUniformBuffers();
     createVertexBuffer();
     createIndexBuffer();

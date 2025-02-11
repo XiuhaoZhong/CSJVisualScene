@@ -36,6 +36,10 @@ protected:
     void createVertexBuffer();
     void createIndexBuffer();
     void createTextureImage();
+    
+    void createFramebuffers();
+    void releaseFramebuffers();
+
     void createMainRenderPass();
 
     void drawImage(VkCommandBuffer commandBuffer, int index);
@@ -89,7 +93,10 @@ private:
     VkDescriptorPool             m_image_descriptor_pool;
     VkPipelineLayout             m_image_pipeline_layout;
     VkPipeline                   m_image_pipeline;
+    std::vector<VkFramebuffer>   m_framebuffers;
     VkRenderPass                 m_main_render_pass;
+
+    bool m_isInit;
 };
 
 using CSJSpGLRenderWidget = std::shared_ptr<CSJSceneEngine>;
