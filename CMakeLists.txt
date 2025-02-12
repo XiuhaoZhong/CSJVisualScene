@@ -90,12 +90,15 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 )
 
 target_link_libraries(${TARGET_NAME} PRIVATE ${vulkan_lib})
+target_link_libraries(${TARGET_NAME} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET_NAME} PRIVATE Qt::Widgets 
                                              Qt::Core
                                              Qt::Gui)
 target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
 
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUDE}>)
+
+add_subdirectory(${THIRD_PARTY_DIR})
 
 #install(TARGETS analogclock
 #    RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
