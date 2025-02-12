@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include <QDebug>
+#include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
 #include "stbi/stb_image.h"
@@ -16,7 +17,7 @@ struct UniformBufferObject {
 };
 
 struct Vertex {
-    glm::vec2 pos;
+    glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
 
@@ -34,7 +35,7 @@ struct Vertex {
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
         attributeDescriptions[1].binding = 0;
@@ -52,14 +53,20 @@ struct Vertex {
 };
 
 const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{ 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-    {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}}
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+    {{ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+
+    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}}
 };
 
 const std::vector<uint16_t> indices = {
-    0,1,2,2,3,0
+    0,1,2,2,3,0,
+    4,5,6,6,7,4
 }; 
 
 CSJSceneEngine::CSJSceneEngine(QVulkanWindow* window)
@@ -89,6 +96,7 @@ void CSJSceneEngine::initSwapChainResources() {
         m_isInit = true;
     }
 
+    createDepthResources();
     createFramebuffers();
 }
 
@@ -96,6 +104,7 @@ void CSJSceneEngine::releaseSwapChainResources() {
     qDebug() << "releaseSwapChainResources!";
 
     releaseFramebuffers();
+    releaseDepthResources();
 }
 
 void CSJSceneEngine::releaseResources() {
@@ -295,6 +304,14 @@ void CSJSceneEngine::createImageRenderPipeline() {
     rasterizer.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable         = VK_FALSE;
 
+    VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
+    depthStencilInfo.sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencilInfo.depthTestEnable       = VK_TRUE;
+    depthStencilInfo.depthWriteEnable      = VK_TRUE;
+    depthStencilInfo.depthCompareOp        = VK_COMPARE_OP_LESS;
+    depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+    depthStencilInfo.stencilTestEnable     = VK_FALSE;
+
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable  = VK_FALSE;
@@ -348,6 +365,7 @@ void CSJSceneEngine::createImageRenderPipeline() {
     pipelineInfo.pViewportState      = &viewportState;
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState   = &multisampling;
+    pipelineInfo.pDepthStencilState  = &depthStencilInfo;
     pipelineInfo.pColorBlendState    = &colorBlending;
     pipelineInfo.pDynamicState       = &dynamicState;
     pipelineInfo.layout              = m_image_pipeline_layout;
@@ -370,15 +388,16 @@ void CSJSceneEngine::createFramebuffers() {
     m_framebuffers.resize(swapChainSize);
 
     for (size_t i = 0; i < swapChainSize; i++) {
-        VkImageView attachments[] = {
-            m_pWindow->swapChainImageView(i)
+        std::array<VkImageView, 2> attachments = {
+            m_pWindow->swapChainImageView(i),
+            m_depth_image_view
         };
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = m_main_render_pass;
-        framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
         framebufferInfo.width = m_pWindow->swapChainImageSize().width();
         framebufferInfo.height = m_pWindow->swapChainImageSize().height();
         framebufferInfo.layers = 1;
@@ -400,6 +419,53 @@ void CSJSceneEngine::releaseFramebuffers() {
     }
 }
 
+VkFormat CSJSceneEngine::findSupportedFormat(const std::vector<VkFormat>& candidates, 
+                                             VkImageTiling tiling, 
+                                             VkFormatFeatureFlags features) {
+    for (VkFormat format : candidates) {
+        VkFormatProperties props;
+        m_pVulkanFunctions->vkGetPhysicalDeviceFormatProperties(m_pWindow->physicalDevice(), format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+            return format;
+        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("failed to find supported format!");
+}
+
+VkFormat CSJSceneEngine::findDepthFormat() {
+    std::vector<VkFormat> candidates = {
+        VK_FORMAT_D32_SFLOAT, 
+        VK_FORMAT_D32_SFLOAT_S8_UINT, 
+        VK_FORMAT_D24_UNORM_S8_UINT
+    };
+
+    return findSupportedFormat(candidates, 
+                               VK_IMAGE_TILING_OPTIMAL, 
+                               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+void CSJSceneEngine::createDepthResources() {
+    VkFormat depthFormat = findDepthFormat();
+
+    QSize extentSize = m_pWindow->swapChainImageSize();
+
+    createImage(extentSize.width(), extentSize.height(), depthFormat, 
+                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depth_image, m_depth_image_memory);
+    m_depth_image_view = createImageView(m_depth_image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+void CSJSceneEngine::releaseDepthResources() {
+    VkDevice device = m_pWindow->device();
+    m_pFunctions->vkDestroyImage(device, m_depth_image, nullptr);
+    m_pFunctions->vkFreeMemory(device, m_depth_image_memory, nullptr);
+    m_pFunctions->vkDestroyImageView(device, m_depth_image_view, nullptr);
+}
+
 void CSJSceneEngine::createMainRenderPass() {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format          = m_pWindow->colorFormat();
@@ -415,23 +481,39 @@ void CSJSceneEngine::createMainRenderPass() {
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; 
 
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format         = findDepthFormat();
+    depthAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments    = &colorAttachmentRef;
+    subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount    = 1;
+    subpass.pColorAttachments       = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     VkSubpassDependency dependency{};
     dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass    = 0;
-    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments    = &colorAttachment;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments    = attachments.data();
     renderPassInfo.subpassCount    = 1;
     renderPassInfo.pSubpasses      = &subpass;
     renderPassInfo.dependencyCount = 1;
@@ -504,7 +586,7 @@ void CSJSceneEngine::updateUniformBuffer(uint32_t currentImage) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     UniformBufferObject ubo{};
-    ubo.model    = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model    = glm::rotate(glm::mat4(1.0f), 0.0f/*time * glm::radians(90.0f)*/, glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view     = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     float aspect = (float) m_pWindow->swapChainImageSize().width() / (float) m_pWindow->swapChainImageSize().height();
     ubo.proj     = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
@@ -617,6 +699,30 @@ void CSJSceneEngine::createImageResources() {
     createIndexBuffer();
     createDescriptorPool();
     createDescriptorSets();
+}
+
+void CSJSceneEngine::releaseImageResources() {
+    VkDevice device = m_pWindow->device();
+    m_pFunctions->vkDestroyDescriptorSetLayout(device, m_image_descriptorset_layout, nullptr);
+
+    m_pFunctions->vkDestroyDescriptorPool(device, m_image_descriptor_pool, nullptr);
+    m_pFunctions->vkDestroyBuffer(device, m_index_buffer, nullptr);
+    m_pFunctions->vkFreeMemory(device, m_index_buffer_memory, nullptr);
+    m_pFunctions->vkDestroyBuffer(device, m_vertex_buffer, nullptr);
+    m_pFunctions->vkFreeMemory(device, m_vertex_buffer_memory, nullptr);
+    
+    for (size_t i = 0; i < m_max_frames_in_flight; i++) {
+        m_pFunctions->vkDestroyBuffer(device, m_image_uniform_buffers[i], nullptr);
+        m_pFunctions->vkFreeMemory(device, m_image_uniform_buffer_memories[i], nullptr);
+    }
+
+    m_pFunctions->vkDestroySampler(device, m_image_texture_sampler, nullptr);
+
+    m_pFunctions->vkDestroyImageView(device, m_image_texture_imageview, nullptr);
+    m_pFunctions->vkDestroyImage(device, m_image_texture_image, nullptr);
+    m_pFunctions->vkDestroyPipeline(device, m_image_pipeline, nullptr);
+    m_pFunctions->vkDestroyPipelineLayout(device, m_image_pipeline_layout, nullptr);
+    m_pFunctions->vkDestroyRenderPass(device, m_main_render_pass, nullptr);
 }
 
 void CSJSceneEngine::startNextFrame() {
@@ -839,7 +945,7 @@ void CSJSceneEngine::createImageTextureSampler() {
 }
 
 void CSJSceneEngine::createImageTextureImageView() {
-    m_image_texture_imageview = createImageView(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_image_texture_imageview = createImageView(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void CSJSceneEngine::createImage(uint32_t width, uint32_t height, 
@@ -881,13 +987,13 @@ void CSJSceneEngine::createImage(uint32_t width, uint32_t height,
 
 }
 
-VkImageView CSJSceneEngine::createImageView(VkImage image, VkFormat format) {
+VkImageView CSJSceneEngine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = aspectFlags;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;

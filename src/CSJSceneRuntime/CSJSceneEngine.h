@@ -32,20 +32,30 @@ protected:
     void createImageTextureImageView();
     void createImageTextureSampler();
     void createImageResources();   
+    void releaseImageResources();
                     
     void createVertexBuffer();
     void createIndexBuffer();
     void createTextureImage();
     
+    
     void createFramebuffers();
     void releaseFramebuffers();
+
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, 
+                                 VkImageTiling tiling, 
+                                 VkFormatFeatureFlags features);
+    VkFormat findDepthFormat();
+    void createDepthResources();
+    void releaseDepthResources();
+
 
     void createMainRenderPass();
 
     void drawImage(VkCommandBuffer commandBuffer, int index);
     void updateUniformBuffer(uint32_t currentImage);
 
-    VkImageView createImageView(VkImage image, VkFormat format);
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createImage(uint32_t width, uint32_t height, 
                      VkFormat format, VkImageTiling tiling, 
                      VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
@@ -93,7 +103,12 @@ private:
     VkDescriptorPool             m_image_descriptor_pool;
     VkPipelineLayout             m_image_pipeline_layout;
     VkPipeline                   m_image_pipeline;
+    
     std::vector<VkFramebuffer>   m_framebuffers;
+    VkImage                      m_depth_image;
+    VkDeviceMemory               m_depth_image_memory;
+    VkImageView                  m_depth_image_view;    
+
     VkRenderPass                 m_main_render_pass;
 
     bool m_isInit;
