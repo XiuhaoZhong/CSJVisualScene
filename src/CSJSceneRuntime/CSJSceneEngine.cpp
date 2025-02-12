@@ -1,5 +1,6 @@
 #include "CSJSceneEngine.h"
 
+#include <iostream>
 #include <fstream>
 
 #include <QDebug>
@@ -7,6 +8,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "stbi/stb_image.h"
+#include "tinyobjloader/tiny_obj_loader.h"
 
 static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -85,6 +87,13 @@ void CSJSceneEngine::initResources() {
     VkDevice device = m_pWindow->device();
     m_pFunctions = m_pWindow->vulkanInstance()->deviceFunctions(device);
     m_pVulkanFunctions = m_pWindow->vulkanInstance()->functions();
+
+    std::vector<tinyobj::shape_t> shapes;
+    if (shapes.size() > 0) {
+        std::cout << "There are shapes" << std::endl;
+    } else {
+        std::cout << "There aren't any shapes" << std::endl;
+    }
 }
 
 void CSJSceneEngine::initSwapChainResources() {
