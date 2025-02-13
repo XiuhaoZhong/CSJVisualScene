@@ -2,15 +2,22 @@
 
 #include <iostream>
 #include <fstream>
+#include <unordered_map>
 
 #include <QDebug>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
+#include "glm/fwd.hpp"
+#include "glm/gtx/hash.hpp"
+
 #include "stbi/stb_image.h"
 #include "tinyobjloader/tiny_obj_loader.h"
 
 static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+const std::string MODEL_PATH = "resources/models/viking_room.obj";
+const std::string TEXTURE_PATH = "resources/textures/viking_room.png";
 
 struct UniformBufferObject {
     glm::mat4 model;
@@ -52,7 +59,19 @@ struct Vertex {
 
         return attributeDescriptions;
     }
+
+    bool operator==(const Vertex& other) const {
+        return pos == other.pos && color == other.color && texCoord == other.texCoord;
+    }
 };
+
+namespace std {
+    template<> struct hash<Vertex> {
+        size_t operator()(Vertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+}
 
 const std::vector<Vertex> vertices = {
     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
@@ -66,10 +85,14 @@ const std::vector<Vertex> vertices = {
     {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}}
 };
 
+
 const std::vector<uint16_t> indices = {
     0,1,2,2,3,0,
     4,5,6,6,7,4
-}; 
+};
+
+std::vector<Vertex> obj_verteices;
+std::vector<uint32_t> obj_indices;
 
 CSJSceneEngine::CSJSceneEngine(QVulkanWindow* window)
     : m_pWindow(window) {
@@ -101,6 +124,7 @@ void CSJSceneEngine::initSwapChainResources() {
     m_max_frames_in_flight = m_pWindow->swapChainImageCount();
 
     if (!m_isInit) {
+        loadModels();
         createImageResources();
         m_isInit = true;
     }
@@ -578,12 +602,13 @@ void CSJSceneEngine::drawImage(VkCommandBuffer commandBuffer, int index) {
     };
     VkDeviceSize offsets[] = {0};
     m_pFunctions->vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    m_pFunctions->vkCmdBindIndexBuffer(commandBuffer, m_index_buffer, 0, VK_INDEX_TYPE_UINT16);
+    m_pFunctions->vkCmdBindIndexBuffer(commandBuffer, m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
     m_pFunctions->vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                                           m_image_pipeline_layout, 0, 1, &m_image_descriptor_sets[index], 0, nullptr);
     
-    m_pFunctions->vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    //m_pFunctions->vkCmdDraw(commandBuffer, static_cast<uint32_t>(obj_verteices.size()), 1, 0, 0);
+    m_pFunctions->vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(obj_indices.size()), 1, 0, 0, 0);
 
     m_pFunctions->vkCmdEndRenderPass(commandBuffer);
 }
@@ -605,7 +630,7 @@ void CSJSceneEngine::updateUniformBuffer(uint32_t currentImage) {
 }
 
 void CSJSceneEngine::createVertexBuffer() {
-    std::vector<Vertex> current_vertices = vertices;
+    std::vector<Vertex> current_vertices = obj_verteices;//vertices;
     VkDeviceSize bufferSize = sizeof(current_vertices[0]) * current_vertices.size();
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -633,7 +658,9 @@ void CSJSceneEngine::createVertexBuffer() {
 }
 
 void CSJSceneEngine::createIndexBuffer() {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    std::vector<uint32_t> currentIndices = obj_indices;
+
+    VkDeviceSize bufferSize = sizeof(currentIndices[0]) * currentIndices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -643,7 +670,7 @@ void CSJSceneEngine::createIndexBuffer() {
 
     void *data;
     m_pFunctions->vkMapMemory(m_pWindow->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
+    memcpy(data, currentIndices.data(), (size_t)bufferSize);
     m_pFunctions->vkUnmapMemory(m_pWindow->device(), stagingBufferMemory);
 
     createBuffer(bufferSize, 
@@ -658,8 +685,9 @@ void CSJSceneEngine::createIndexBuffer() {
 }
 
 void CSJSceneEngine::createTextureImage() {
+    // resources/originImages/slamDumk_images/cross_street.jpeg
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("resources/originImages/slamDumk_images/cross_street.jpeg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     if (!pixels) {
@@ -694,6 +722,53 @@ void CSJSceneEngine::createTextureImage() {
 
     m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
     m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
+}
+
+void CSJSceneEngine::loadModels() {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+        throw std::runtime_error(warn + err);
+    }
+
+    std::unordered_map<Vertex, uint32_t> uniqueVerteices{};
+
+    for (const auto &shape : shapes) {
+        for (const auto &index : shape.mesh.indices) {
+            Vertex vertex{};
+
+            vertex.pos = {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+
+            vertex.texCoord = {
+                attrib.texcoords[2 * index.texcoord_index + 0],
+                (1.0f - attrib.texcoords[2 * index.texcoord_index + 1])
+            };
+
+            vertex.color = {1.0f, 1.0f, 1.0f};
+
+            if (uniqueVerteices.count(vertex) == 0) {
+                uniqueVerteices[vertex] = static_cast<uint32_t>(obj_verteices.size());
+                obj_verteices.push_back(vertex);
+            }
+
+            obj_indices.push_back(uniqueVerteices[vertex]);
+            //obj_verteices.push_back(vertex);
+            //obj_indices.push_back(indices.size());
+        }
+    }
+
+    // without index, the vertex total number is 11484!
+    std::cout << "*******************************************" << std::endl;
+    std::cout << "Model loading compeleted, total vertex number: " << obj_verteices.size() << std::endl;
+    std::cout << "*******************************************" << std::endl;
 }
 
 void CSJSceneEngine::createImageResources() {

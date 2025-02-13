@@ -37,6 +37,8 @@ protected:
     void createVertexBuffer();
     void createIndexBuffer();
     void createTextureImage();
+
+    void loadModels();
     
     
     void createFramebuffers();
