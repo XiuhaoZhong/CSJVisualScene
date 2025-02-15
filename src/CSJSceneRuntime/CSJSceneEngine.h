@@ -57,8 +57,8 @@ protected:
     void drawImage(VkCommandBuffer commandBuffer, int index);
     void updateUniformBuffer(uint32_t currentImage);
 
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-    void createImage(uint32_t width, uint32_t height, 
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels,
                      VkFormat format, VkImageTiling tiling, 
                      VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
                      VkImage &image, VkDeviceMemory &imageMemory);
@@ -76,7 +76,9 @@ protected:
                            uint32_t width, uint32_t height);
 
     void transitionImageLayout(VkImage image, VkFormat format,
-                               VkImageLayout oldLayout, VkImageLayout newLayout);
+                               VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+
+    void generateMipmaps(VkImage image, VkFormat format, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -89,6 +91,7 @@ private:
     std::vector<VkBuffer>        m_image_uniform_buffers;
     std::vector<VkDeviceMemory>  m_image_uniform_buffer_memories;
     std::vector<void *>          m_image_uniform_buffer_mappeds;
+    uint32_t                     m_mipLevels;
 
     VkBuffer                     m_vertex_buffer;
     VkDeviceMemory               m_vertex_buffer_memory;
