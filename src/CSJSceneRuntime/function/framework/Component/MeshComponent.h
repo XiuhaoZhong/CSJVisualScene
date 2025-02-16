@@ -1,0 +1,19 @@
+#ifndef __MESHCOMPONENT_H__
+#define __MESHCOMPONENT_H__
+
+#include "CSJComponent.h"
+
+#include <vector>
+
+#include "CSJSceneRuntime/function/framework/render/RenderObjects.h"
+
+class MeshComponent : public CSJComponent {
+public:
+    MeshComponent();
+    ~MeshComponent();
+
+private:
+    std::vector<GameObjPartDesc> m_raw_meshes;
+};
+
+#endif // __MESHCOMPONENT_H__

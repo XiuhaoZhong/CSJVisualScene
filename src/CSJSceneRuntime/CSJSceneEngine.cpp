@@ -280,9 +280,9 @@ void CSJSceneEngine::createDescriptorSets() {
         descriptorWrites[1].pImageInfo      = &imageInfo;
 
         m_pFunctions->vkUpdateDescriptorSets(m_pWindow->device(), 
-                               static_cast<uint32_t>(descriptorWrites.size()),
-                               descriptorWrites.data(),
-                               0, nullptr);
+                                             static_cast<uint32_t>(descriptorWrites.size()),
+                                             descriptorWrites.data(),
+                                             0, nullptr);
     }
 }
 

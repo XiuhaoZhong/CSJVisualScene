@@ -20,6 +20,7 @@ set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParts)
 
 set(JSON_INCLUDE ${THIRD_PARTY_DIR}/json11)
+set(GLM_INCLUDE ${THIRD_PARTY_DIR})
 add_library(json11 ${JSON_INCLUDE}/json11.cpp)
 set_target_properties(json11 PROPERTIES FOLDER "ThirdParty/json11")
 
@@ -31,6 +32,8 @@ set_target_properties(json11 PROPERTIES FOLDER "ThirdParty/json11")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core Gui)
+
+include_directories(${ROOT_DIR}/src ${THIRD_PARTY_DIR})
 
 set(PROJECT_SOURCES
     src/main/main.cpp
@@ -48,8 +51,6 @@ set(CSJGL_SOURCES
 )
 
 file(GLOB_RECURSE RUNTIME_SOURCE_FILE "${ROOT_DIR}/src/CSJSceneRuntime/*")
-
-include_directories(${ROOT_DIR}/src ${THIRD_PARTY_DIR})
 
 if(WIN32)
 set(vulkan_lib )
@@ -93,12 +94,11 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 
 target_link_libraries(${TARGET_NAME} PRIVATE ${vulkan_lib})
 target_link_libraries(${TARGET_NAME} PRIVATE tinyobjloader)
-target_link_libraries(${TARGET_NAME} PRIVATE Qt::Widgets 
-                                             Qt::Core
-                                             Qt::Gui)
+target_link_libraries(${TARGET_NAME} PRIVATE Qt::Widgets Qt::Core Qt::Gui)
 target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
 
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUDE}>)
+target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${GLM_INCLUDE}>)
 
 add_subdirectory(${THIRD_PARTY_DIR})
 
