@@ -53,7 +53,9 @@ set(CSJGL_SOURCES
 file(GLOB_RECURSE RUNTIME_SOURCE_FILE "${ROOT_DIR}/src/CSJSceneRuntime/*")
 
 if(WIN32)
-set(vulkan_lib )
+set(Vulkan_DIR $ENV{VULKAN_SDK})
+set(vulkan_Lib_DIR ${Vulkan_DIR}/Lib/cmake)
+set(vulkan_lib ${Vulkan_DIR}/Lib/vulkan-1.lib)
 elseif(APPLE)
 set(vulkan_lib "/Users/xiuhaozhong/DevEnvironments/VulkanSDK/1.4.304.0/macOS/lib/libvulkan.1.dylib")
 endif()
@@ -99,6 +101,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
 
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUDE}>)
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${GLM_INCLUDE}>)
+target_include_directories(${TARGET_NAME} PUBLIC ${vulkan_DIR}/Include)
 
 add_subdirectory(${THIRD_PARTY_DIR})
 
