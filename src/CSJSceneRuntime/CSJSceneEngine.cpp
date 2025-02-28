@@ -724,7 +724,7 @@ void CSJSceneEngine::createTextureImage() {
     m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
     m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
 
-    generateMipmaps(m_image_texture_image, VK_FORMAT_R8G8_SRGB, texWidth, texHeight, m_mipLevels);
+    generateMipmaps(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
 }
 
 void CSJSceneEngine::loadModels() {
