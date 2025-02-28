@@ -12,6 +12,10 @@ public:
     MeshComponent();
     ~MeshComponent();
 
+    void tick(float delta_time) override;
+
+    void setTick();
+
 private:
     std::vector<GameObjPartDesc> m_raw_meshes;
 };

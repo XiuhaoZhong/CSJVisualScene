@@ -5,5 +5,10 @@ MeshComponent::MeshComponent() {
 }
 
 MeshComponent::~MeshComponent() {
-    
+
 }
+
+void MeshComponent::tick(float delta_time) {
+
+}
+
