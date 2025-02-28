@@ -12,11 +12,11 @@ void CSJGameLevel::tick(float delta_time) {
     }
 
     for (auto pair : m_objects) {
-        if (!(pair->second)) {
+        if (!(pair.second)) {
             continue;
         }
 
-        pair->second->tick(delta_time);
+        pair.second->tick(delta_time);
 
         // TODO: physical engine tick;
     }
