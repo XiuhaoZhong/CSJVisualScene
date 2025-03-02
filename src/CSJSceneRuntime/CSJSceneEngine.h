@@ -40,7 +40,6 @@ protected:
 
     void loadModels();
     
-    
     void createFramebuffers();
     void releaseFramebuffers();
 

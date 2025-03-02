@@ -13,9 +13,14 @@ class CSJRenderMaterial {
 
 };
 
-class CSJRenderSource {
+/**
+ * This class is responsible for managing render resource, including upload
+ * resources into render core, loading material and so on.
+ */
+class CSJRenderResource {
 public:
-
+    CSJRenderResource();
+    ~CSJRenderResource();
     // TODO: load and insert meshes;
     // TODO: load and insert materials;
 

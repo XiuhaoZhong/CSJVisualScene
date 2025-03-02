@@ -11,6 +11,10 @@ public:
     virtual ~CSJComponent();
     virtual void tick(float delta_time);    
 
+    virtual void loadResource(std::weak_ptr<CSJObject> parent_object) {
+        m_parent_object = parent_object;
+    }
+
 protected:
     std::weak_ptr<CSJObject> m_parent_object;
     glm::mat4 m_transform;

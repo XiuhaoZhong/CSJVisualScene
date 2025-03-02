@@ -13,8 +13,7 @@ public:
     ~MeshComponent();
 
     void tick(float delta_time) override;
-
-    void setTick();
+    void loadResource(std::weak_ptr<CSJObject> parent_object) override;
 
 private:
     std::vector<GameObjPartDesc> m_raw_meshes;

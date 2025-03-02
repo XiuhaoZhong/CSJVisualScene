@@ -818,6 +818,12 @@ void CSJSceneEngine::startNextFrame() {
 
     drawImage(commandBuffer, m_pWindow->currentSwapChainImageIndex());
 
+    /*************************************************/
+    /* tick circle                                   */
+    /* logic tick                                    */
+    /* render tick                                   */
+    /*************************************************/
+
     m_pWindow->frameReady();
     m_pWindow->requestUpdate();
 }
