@@ -15,6 +15,7 @@ add_compile_definitions(STB_IMAGE_IMPLEMENTATION)
 add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 add_compile_definitions(TINYOBJLOADER_IMPLEMENTATION)
+add_definitions("-Wall -g")
 
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParts)
