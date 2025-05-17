@@ -2,6 +2,7 @@
 #define __CSJRENDERGUIDMANAGER_H__
 
 #include <unordered_map>
+#include <vector>
 
 static const size_t s_invalid_guid = 0;
 template <typename T>

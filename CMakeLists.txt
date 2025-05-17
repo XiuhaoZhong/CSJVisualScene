@@ -11,6 +11,26 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+set(QTDIR $ENV{QTDIR_6_8_0})
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(QTDIR ${QTDIR}/debug)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(QTDIR ${QTDIR}/release)
+else ()
+    message(FATAL_ERROR "No specific configuration!")
+endif()
+
+# set Qt environment variables
+if (CMAKE_HOST_WIN32)
+set(ENV{PATH} "${QTDIR}/bin${QTDIR}/lib;$ENV{PATH}")
+elseif (CMAKE_HOST_APPLE)
+set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
+endif()
+
+set(QT_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+set(QT6_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+
 add_compile_definitions(STB_IMAGE_IMPLEMENTATION)
 add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
