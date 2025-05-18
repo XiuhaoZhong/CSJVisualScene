@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QDebug>
 
+#include "Tools/CSJPathTool.h"
+
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 #include "CSJSceneRuntime/CSJSceneRuntimeData.h"
 
@@ -16,6 +18,9 @@ int main(int argc, char *argv[]) {
         qDebug() << "QVulkanInstance create failed!";
         return -1;
     }
+
+    CSJPathTool *pathTool = CSJPathTool::getInstance();
+    pathTool->setWorkDirectory(fs::canonical(fs::path(argv[0]).remove_filename()));
 
     CSJSceneRumtimeData::setVulkanInstance(&inst);
 

@@ -1,10 +1,11 @@
 #include "mainwindow.h"
 
+#include <QDebug>
 #include <QPushButton>
 #include <QHBoxLayout>
 
+#include "Tools/CSJPathTool.h"
 #include "CSJSceneEditor/CSJSceneEditorWindow.h"
-
 #include "CSJSceneRuntime/CSJSceneEngine.h"
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 

@@ -12,14 +12,23 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 set(QTDIR $ENV{QTDIR_6_8_0})
+set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParts)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(QTDIR ${QTDIR}/debug)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(OUTPUT_DIR "${ROOT_DIR}/output/Debug/")
+    file(MAKE_DIRECTORY ${OUTPUT_DIR})
+else()
     set(QTDIR ${QTDIR}/release)
-else ()
-    message(FATAL_ERROR "No specific configuration!")
+    set(OUTPUT_DIR "${ROOT_DIR}/output/Release/")
+    file(MAKE_DIRECTORY ${OUTPUT_DIR})
 endif()
+
+# set the resource directory in the output directory
+set(OUTPUT_RESOURCE_DIR "${OUTPUT_DIR}/resource")
+
+set(DYNAMIC_LIBS "")
 
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
@@ -36,9 +45,6 @@ add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 add_compile_definitions(TINYOBJLOADER_IMPLEMENTATION)
 add_definitions("-Wall -g")
-
-set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParts)
 
 set(JSON_INCLUDE ${THIRD_PARTY_DIR}/json11)
 set(GLM_INCLUDE ${THIRD_PARTY_DIR})
@@ -72,6 +78,7 @@ set(CSJGL_SOURCES
 )
 
 file(GLOB_RECURSE RUNTIME_SOURCE_FILE "${ROOT_DIR}/src/CSJSceneRuntime/*")
+file(GLOB TOOL_SOURCE_FILES "${ROOT_DIR}/src/Tools/*")
 
 if(WIN32)
 set(Vulkan_DIR $ENV{VULKAN_SDK})
@@ -88,6 +95,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${CSJGL_SOURCES}
         ${CSJRENDER_SOURCES}
         ${RUNTIME_SOURCE_FILE}
+        ${TOOL_SOURCE_FILES}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET CSJVisualScene APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -125,6 +133,25 @@ target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${GLM_INCLUDE
 target_include_directories(${TARGET_NAME} PUBLIC ${vulkan_DIR}/Include)
 
 add_subdirectory(${THIRD_PARTY_DIR})
+
+add_custom_command(TARGET ${TARGET_NAME}
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
+                   COMMENT "Copy target ${TARGET} to output directory")
+
+if (CMAKE_HOST_WIN32)
+foreach(file ${DYNAMIC_LIBS})
+    add_custom_command(TARGET ${TARGET_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy ${file} ${OUTPUT_DIR})
+endforeach()
+endif()
+
+file(MAKE_DIRECTORY ${OUTPUT_RESOURCE_DIR})
+add_custom_command(TARGET ${TARGET_NAME}
+                  POST_BUILD
+                  COMMAND ${CMAKE_COMMAND} -E copy_directory ${ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
+                  COMMENT "Copy Resources to output directory")
 
 #install(TARGETS analogclock
 #    RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
