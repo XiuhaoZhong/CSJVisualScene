@@ -4,7 +4,7 @@
 #include <QPushButton>
 #include <QHBoxLayout>
 
-#include "Tools/CSJPathTool.h"
+#include "Utils/CSJPathTool.h"
 #include "CSJSceneEditor/CSJSceneEditorWindow.h"
 #include "CSJSceneRuntime/CSJSceneEngine.h"
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"

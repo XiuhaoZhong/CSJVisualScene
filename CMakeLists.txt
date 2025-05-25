@@ -78,8 +78,8 @@ set(CSJGL_SOURCES
 )
 
 file(GLOB_RECURSE RUNTIME_SOURCE_FILE "${ROOT_DIR}/src/CSJSceneRuntime/*")
-file(GLOB TOOL_SOURCE_FILES "${ROOT_DIR}/src/Tools/*")
-
+file(GLOB TOOL_SOURCE_FILES "${ROOT_DIR}/src/Utils/*")
+ 
 if(WIN32)
 set(Vulkan_DIR $ENV{VULKAN_SDK})
 set(vulkan_Lib_DIR ${Vulkan_DIR}/Lib/cmake)
@@ -124,6 +124,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 )
 
 target_link_libraries(${TARGET_NAME} PRIVATE ${vulkan_lib})
+target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)                        
 target_link_libraries(${TARGET_NAME} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET_NAME} PRIVATE Qt::Widgets Qt::Core Qt::Gui)
 target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)

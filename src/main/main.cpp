@@ -3,7 +3,7 @@
 #include <QApplication>
 #include <QDebug>
 
-#include "Tools/CSJPathTool.h"
+#include "Utils/CSJPathTool.h"
 
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 #include "CSJSceneRuntime/CSJSceneRuntimeData.h"
