@@ -21,6 +21,7 @@ public:
     fs::path getTextureDir();
     fs::path getImageDir();
     fs::path getShaderDir();
+    fs::path getLogDir();
 
     std::string getModelFileWithName(std::string& modelFileName);
     std::string getImageWithName(std::string& imageName);

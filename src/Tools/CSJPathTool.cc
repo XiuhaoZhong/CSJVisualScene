@@ -44,6 +44,17 @@ fs::path CSJPathTool::getShaderDir() {
     return getResourceDir().append("shaders");
 }
 
+fs::path CSJPathTool::getLogDir() {
+    fs::path logPath = getExecuteDir().append("logs");
+
+    /* If the log directory is not exist, create it. */
+    if (!fs::exists(logPath)) {
+        fs::create_directory(logPath);
+    }
+
+    return logPath;
+}
+
 std::string CSJPathTool::getModelFileWithName(std::string &model_file_name) {
     return getModelDir().string().append(model_file_name);
 }
