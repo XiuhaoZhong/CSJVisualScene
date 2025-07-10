@@ -139,7 +139,6 @@ target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUD
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${GLM_INCLUDE}>)
 target_include_directories(${TARGET_NAME} PUBLIC ${vulkan_DIR}/Include)
 
-# add_subdirectory(${THIRD_PARTY_DIR})
 add_custom_command(TARGET ${TARGET_NAME}
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
@@ -164,12 +163,7 @@ if(CMAKE_HOST_WIN32)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/resources
     )
 elseif(CMAKE_HOST_APPLE)
-    if(CSJ_BUILD_DEBUG)
-        # install(DIRECTORY ${RESOURCE_DIR}
-        #     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/${TARGET_NAME}.app/Contents/Resources
-        #     COMPONENT Runtime
-        # )
-
+    if(NOT CSJ_BUILD_PACKAGE)
         add_custom_command(
             TARGET ${TARGET_NAME}
             POST_BUILD
@@ -178,7 +172,6 @@ elseif(CMAKE_HOST_APPLE)
                 "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Resources"
                 COMMENT "Copy resource diretory ..."
         )
-        message(STATUS "Compile target directory: $<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Resources")
     else()
         set_target_properties(${TARGET_NAME} PROPERTIES
             BUILD_WITH_INSTALL_RPATH ON
