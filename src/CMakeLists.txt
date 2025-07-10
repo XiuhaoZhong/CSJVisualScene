@@ -135,6 +135,10 @@ target_link_libraries(${TARGET_NAME} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET_NAME} PRIVATE Qt::Widgets Qt::Core Qt::Gui)
 target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
 
+if(CMAKE_HOST_APPLE)
+    target_link_directories(${TARGET_NAME} PRIVATE "-framework CoreFoundation")
+endif()
+
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUDE}>)
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${GLM_INCLUDE}>)
 target_include_directories(${TARGET_NAME} PUBLIC ${vulkan_DIR}/Include)
