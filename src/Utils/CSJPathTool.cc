@@ -20,12 +20,12 @@ bool CSJPathTool::fileExists(std::string &file_path) {
     return fs::exists(tmp);
 }
 
-fs::path CSJPathTool::getExecuteDir() {
+fs::path CSJPathTool::getWorkDir() {
     return m_workPath;
 }
 
 fs::path CSJPathTool::getResourceDir() {
-    return getExecuteDir().append("resource");
+    return getWorkDir().append("Resources");
 }
 
 fs::path CSJPathTool::getModelDir() {
@@ -45,7 +45,7 @@ fs::path CSJPathTool::getShaderDir() {
 }
 
 fs::path CSJPathTool::getLogDir() {
-    fs::path logPath = getExecuteDir().append("logs");
+    fs::path logPath = getWorkDir().append("logs");
 
     /* If the log directory is not exist, create it. */
     if (!fs::exists(logPath)) {

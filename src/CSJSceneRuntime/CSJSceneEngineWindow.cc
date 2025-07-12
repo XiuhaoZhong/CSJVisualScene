@@ -1,12 +1,13 @@
 #include "CSJSceneEngineWindow.h"
 
-#include <QDebug>
+#include "Utils/CSJLogger.h"
 
 #include "CSJSceneEngine.h"
 #include "CSJSceneRuntimeData.h"
 
 CSJSceneEngineWindow::CSJSceneEngineWindow(QWindow *parent)
-    : QVulkanWindow(parent) {
+    : QVulkanWindow(parent)
+    , m_pLogger(CSJLogger::getLoggerInst()) {
     setVulkanInstance(CSJSceneRumtimeData::getVulkanInstance());
 }
 
@@ -19,21 +20,22 @@ QVulkanWindowRenderer *CSJSceneEngineWindow::createRenderer() {
 }
 
 void CSJSceneEngineWindow::mousePressEvent(QMouseEvent *event) {
-    qDebug() << "CSJSceneEngineWindow::mousePressEvent!";
+    m_pLogger->log_info("CSJSceneEngineWindow::mousePressEvent!");
+    
 }
 
 void CSJSceneEngineWindow::mouseReleaseEvent(QMouseEvent *event) {
-    qDebug() << "CSJSceneEngineWindow::mouseReleaseEvent!";
+    m_pLogger->log_info("CSJSceneEngineWindow::mouseReleaseEvent!");
 }
 
 void CSJSceneEngineWindow::keyPressEvent(QKeyEvent *event) {
-    qDebug() << "CSJSceneEngineWindow::keyPressEvent!";
+    m_pLogger->log_info("CSJSceneEngineWindow::keyPressEvent!");
 }
 
 void CSJSceneEngineWindow::keyReleaseEvent(QKeyEvent *event) {
-    qDebug() << "CSJSceneEngineWindow::keyReleaseEvent!"; 
+    m_pLogger->log_info("CSJSceneEngineWindow::keyReleaseEvent!"); 
 }
 
 void CSJSceneEngineWindow::wheelEvent(QWheelEvent *event) {
-    qDebug() << "CSJSceneEngineWindow::wheelEvent!";
+    m_pLogger->log_info("CSJSceneEngineWindow::wheelEvent!");
 }

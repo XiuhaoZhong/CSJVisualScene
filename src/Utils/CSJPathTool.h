@@ -15,7 +15,7 @@ public:
     void setWorkDirectory(fs::path work_directory);
     bool fileExists(std::string &file_path);
 
-    fs::path getExecuteDir();
+    fs::path getWorkDir();
     fs::path getResourceDir();
     fs::path getModelDir();
     fs::path getTextureDir();

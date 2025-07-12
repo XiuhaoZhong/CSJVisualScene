@@ -27,3 +27,8 @@ CSJLogger::~CSJLogger() {
     m_pLogger->flush();
     spdlog::drop_all();
 }
+
+CSJLogger *CSJLogger::getLoggerInst() {
+    static CSJLogger logger;
+    return &logger;
+}

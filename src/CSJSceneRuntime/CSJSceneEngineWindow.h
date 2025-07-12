@@ -3,6 +3,8 @@
 
 #include <QVulkanWindow>
 
+class CSJLogger;
+
 class CSJSceneEngineWindow : public QVulkanWindow {
      Q_OBJECT
 public:
@@ -16,6 +18,9 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+
+private:
+    CSJLogger *m_pLogger;
 };
 
 #endif // __CSJSCENEENGINEWINDOW_H__

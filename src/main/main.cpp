@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 
 #include <iostream>
+#include <locale>
 
 #include <QApplication>
 #include <QDebug>
@@ -8,6 +9,7 @@
 
 #include "Utils/CSJPathTool.h"
 #include "Utils/CSJStringTool.h"
+#include "Utils/CSJLogger.h"
 
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 #include "CSJSceneRuntime/CSJSceneRuntimeData.h"
@@ -17,22 +19,22 @@ void runGameSceneDirectly();
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
+    CSJLogger *logger = CSJLogger::getLoggerInst();
+
     QVulkanInstance inst;
     if (!inst.create()) {
-        qDebug() << "QVulkanInstance create failed!";
+        logger->log_fatal("QVulkanInstance create failed!");
         return -1;
     }
 
     CSJPathTool *pathTool = CSJPathTool::getInstance();
 
     std::string path_str(argv[0]);
-    std::cout << "Working path: " << path_str << std::endl;
-    std::wstring path_wstr = CSJStringTool::string2wstring(path_str);
-    //qDebug() << "The execution path: " << QString::fromStdWString(path_wstr);
-    std::wcout << L"The execution path wide version: " << path_wstr << std::endl;
     pathTool->setWorkDirectory(fs::canonical(fs::path(argv[0]).remove_filename()));
 
     CSJSceneRumtimeData::setVulkanInstance(&inst);
+
+    logger->log_info("Vulkan intance create successfully!");
 
     MainWindow w;
     w.show();
