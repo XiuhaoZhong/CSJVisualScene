@@ -34,7 +34,7 @@
 
 *.cache
 
-output
+output*
 build
 .vscode
 CMakeLists_backup.txt

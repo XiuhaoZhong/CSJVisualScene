@@ -14,9 +14,14 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 # set the resource directory in the output directory
 set(BUILD_DIR "${PROJ_ROOT_DIR}/build")
 
-set(OUTPUT_DIR "${PROJ_ROOT_DIR}/output")
-file(MAKE_DIRECTORY ${OUTPUT_DIR})
-# set(OUTPUT_RESOURCE_DIR "${OUTPUT_DIR}/resource")
+set(APP_OUTPUT_DIR "${PROJ_ROOT_DIR}/output")
+if(CSJ_BUILD_DEBUG)
+    set(APP_OUTPUT_DIR "${APP_OUTPUT_DIR}/Debug")
+else()
+    set(APP_OUTPUT_DIR "${APP_OUTPUT_DIR}/Release")
+endif()
+file(MAKE_DIRECTORY ${APP_OUTPUT_DIR})
+
 set(THIRDPARTS_DIR "${PROJ_ROOT_DIR}/src/3rdParts")
 
 set(RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)

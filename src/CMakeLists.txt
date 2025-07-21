@@ -2,27 +2,23 @@ cmake_minimum_required(VERSION 3.16)
 
 set(TARGET_NAME CSJVisualScene)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 project(${TARGET_NAME} VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(QTDIR $ENV{QTDIR_6_8_0})
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(THIRD_PARTY_DIR ${THIRDPARTS_DIR})
 
+set(QTDIR $ENV{QTDIR_6_8_0})
 if (CSJ_BUILD_DEBUG)
     set(QTDIR ${QTDIR}/debug)
-    #set(OUTPUT_DIR "${ROOT_DIR}/output/Debug/")
-    #file(MAKE_DIRECTORY ${OUTPUT_DIR})
 else()
     set(QTDIR ${QTDIR}/release)
-    #set(OUTPUT_DIR "${ROOT_DIR}/output/Release/")
-    #file(MAKE_DIRECTORY ${OUTPUT_DIR})
 endif()
 
 set(QT_DEBUG_DIR "${QTDIR}" CACHE PATH "QT debug Directory")
@@ -32,13 +28,13 @@ set(CMAKE_PREFIX_PATH
     "$<IF:$<CONFIG:Debug>, ${QT_DEBUG_DIR}, $<QT_RELEASE_DIR>>")
 
 # set the resource directory in the output directory
-set(OUTPUT_RESOURCE_DIR "${OUTPUT_DIR}/resource")
+set(OUTPUT_RESOURCE_DIR "${APP_OUTPUT_DIR}/resources")
 
 set(DYNAMIC_LIBS "")
 
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
-    set(ENV{PATH} "${QTDIR}/bin${QTDIR}/lib;$ENV{PATH}")
+    set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;${VULKAN_SDK}/Lib;$ENV{PATH}")
 elseif (CMAKE_HOST_APPLE)
     set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}:$ENV{VULKAN_DIR}/lib:$ENV{PATH}")
 endif()
@@ -50,7 +46,7 @@ add_compile_definitions(STB_IMAGE_IMPLEMENTATION)
 add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 add_compile_definitions(TINYOBJLOADER_IMPLEMENTATION)
-add_definitions("-Wall -g")
+# add_definitions("-Wall -g")
 
 set(JSON_INCLUDE ${THIRD_PARTY_DIR}/json11)
 set(GLM_INCLUDE ${THIRD_PARTY_DIR})
@@ -143,20 +139,57 @@ target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${JSON_INCLUD
 target_include_directories(${TARGET_NAME} PUBLIC $<BUILD_INTERFACE:${GLM_INCLUDE}>)
 target_include_directories(${TARGET_NAME} PUBLIC ${vulkan_DIR}/Include)
 
-add_custom_command(TARGET ${TARGET_NAME}
-                   POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
-                   COMMENT "Copy target ${TARGET} to output directory" )
-
-if (CMAKE_HOST_WIN32)
-foreach(file ${DYNAMIC_LIBS})
-    add_custom_command(TARGET ${TARGET_NAME}
-                       POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy ${file} ${OUTPUT_DIR})
-endforeach()
-endif()
+# add_custom_command(TARGET ${TARGET_NAME}
+#                    POST_BUILD
+#                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${APP_OUTPUT_DIR}
+#                    COMMENT "Copy target ${TARGET} to output directory" )
 
 if(CMAKE_HOST_WIN32)
+    foreach(file ${DYNAMIC_LIBS})
+        add_custom_command(TARGET ${TARGET_NAME}
+                        POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy ${file} ${APP_OUTPUT_DIR})
+    endforeach()
+
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy 
+                        $<TARGET_FILE:${TARGET_NAME}> ${APP_OUTPUT_DIR}
+                   COMMENT "Copy target ${TARGET} to output directory")
+
+    file(MAKE_DIRECTORY ${OUTPUT_RESOURCE_DIR})
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                            ${PROJ_ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
+                    COMMENT "Copy Resources to output directory") 
+
+    set(deploy_qt ON)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt6 HINTS "${QTDIR}/bin/")
+    if (NOT WINDEPLOYQT_EXECUTABLE) 
+        message(FATAL_ERROR "windeployqt6 not found in ${QTDIR}/bin/")
+    endif()
+    set(WINDEPLOYQT_OPTIONS --verbose 1 --compiler-runtime)
+    if(CSJ_BUILD_DEBUG)
+        list(APPEND WINDEPLOYQT_OPTIONS --debug)
+        if(EXISTS ${APP_OUTPUT_DIR}/Qt6Cored.dll)
+            set(deploy_qt OFF)
+        endif()
+    else()
+        list(APPEND WINDEPLOYQT_OPTIONS --release)
+        if(EXISTS ${APP_OUTPUT_DIR}/Qt6Core.dll)
+            set(deploy_qt OFF)
+        endif()
+    endif()
+    
+    if(deploy_qt)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
+            COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" ${WINDEPLOYQT_EXECUTABLE}
+                ${WINDEPLOYQT_OPTIONS}
+                ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
+            WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
+            COMMENT "Depolying Qt ..."
+        )    
+    endif()
+
     install(TARGETS ${TARGET_NAME}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION bin
