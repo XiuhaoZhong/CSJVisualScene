@@ -26,15 +26,12 @@ int main(int argc, char *argv[]) {
         logger->log_fatal("QVulkanInstance create failed!");
         return -1;
     }
-
-    CSJPathTool *pathTool = CSJPathTool::getInstance();
-
-    std::string path_str(argv[0]);
-    pathTool->setWorkDirectory(fs::canonical(fs::path(argv[0]).remove_filename()));
-
+    logger->log_info("Vulkan intance create successfully!");
     CSJSceneRumtimeData::setVulkanInstance(&inst);
 
-    logger->log_info("Vulkan intance create successfully!");
+    CSJPathTool *pathTool = CSJPathTool::getInstance();
+    std::string path_str(argv[0]);
+    pathTool->setWorkDirectory(fs::canonical(fs::path(argv[0]).remove_filename()));
 
     MainWindow w;
     w.show();
