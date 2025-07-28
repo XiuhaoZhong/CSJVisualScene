@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
     CSJLogger *logger = CSJLogger::getLoggerInst();
 
-    QVulkanInstance inst;
+    QVulkanInstance inst; 
     if (!inst.create()) {
         logger->log_fatal("QVulkanInstance create failed!");
         return -1;
@@ -35,7 +35,8 @@ int main(int argc, char *argv[]) {
 
     MainWindow w;
     w.show();
-    return a.exec();
+    int ret = a.exec();
+    return ret;
 }
 
 void runGameSceneDirectly() {

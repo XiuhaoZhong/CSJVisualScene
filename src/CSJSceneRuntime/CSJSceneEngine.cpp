@@ -4,7 +4,6 @@
 #include <fstream>
 #include <unordered_map>
 
-#include <QDebug>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
@@ -13,6 +12,8 @@
 
 #include "stbi/stb_image.h"
 #include "tinyobjloader/tiny_obj_loader.h"
+
+#include "Utils/CSJLogger.h"
 
 static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -85,7 +86,6 @@ const std::vector<Vertex> vertices = {
     {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}}
 };
 
-
 const std::vector<uint16_t> indices = {
     0,1,2,2,3,0,
     4,5,6,6,7,4
@@ -95,9 +95,10 @@ std::vector<Vertex> obj_verteices;
 std::vector<uint32_t> obj_indices;
 
 CSJSceneEngine::CSJSceneEngine(QVulkanWindow* window)
-    : m_pWindow(window) {
+    : m_pWindow(window)
+    , m_pLogger(CSJLogger::getLoggerInst()) {
     
-        m_isInit = false;
+    m_isInit = false;
 }
 
 CSJSceneEngine::~CSJSceneEngine() {
@@ -105,7 +106,7 @@ CSJSceneEngine::~CSJSceneEngine() {
 }
 
 void CSJSceneEngine::initResources() {
-    qDebug() << "initResources!";
+    m_pLogger->log_info("initResources!");
 
     VkDevice device = m_pWindow->device();
     m_pFunctions = m_pWindow->vulkanInstance()->deviceFunctions(device);
@@ -113,14 +114,14 @@ void CSJSceneEngine::initResources() {
 
     std::vector<tinyobj::shape_t> shapes;
     if (shapes.size() > 0) {
-        std::cout << "There are shapes" << std::endl;
+        m_pLogger->log_info("Read shape!");
     } else {
-        std::cout << "There aren't any shapes" << std::endl;
+        m_pLogger->log_info("There aren't any shapes!");
     }
 }
 
 void CSJSceneEngine::initSwapChainResources() {
-    qDebug() << "initSwapChainReousrces!";
+    m_pLogger->log_info("initSwapChainReousrces!");
     m_max_frames_in_flight = m_pWindow->swapChainImageCount();
 
     if (!m_isInit) {
@@ -134,14 +135,14 @@ void CSJSceneEngine::initSwapChainResources() {
 }
 
 void CSJSceneEngine::releaseSwapChainResources() {
-    qDebug() << "releaseSwapChainResources!";
+    m_pLogger->log_info("releaseSwapChainResources!");
 
     releaseFramebuffers();
     releaseDepthResources();
 }
 
 void CSJSceneEngine::releaseResources() {
-    qDebug() << "releaseResources!";
+    m_pLogger->log_info("releaseResources!");
 }
 
 std::vector<char> CSJSceneEngine::readFile(const std::string& filename) {

@@ -21,7 +21,6 @@ QVulkanWindowRenderer *CSJSceneEngineWindow::createRenderer() {
 
 void CSJSceneEngineWindow::mousePressEvent(QMouseEvent *event) {
     m_pLogger->log_info("CSJSceneEngineWindow::mousePressEvent!");
-    
 }
 
 void CSJSceneEngineWindow::mouseReleaseEvent(QMouseEvent *event) {

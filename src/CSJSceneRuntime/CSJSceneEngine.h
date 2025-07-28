@@ -9,6 +9,8 @@
 
 #include "CSJGLRender/CSJGLSceneBase.h"
 
+class CSJLogger;
+
 class CSJSceneEngine : public QVulkanWindowRenderer {
 public:
     CSJSceneEngine(QVulkanWindow *window);
@@ -116,6 +118,7 @@ private:
     VkRenderPass                 m_main_render_pass;
 
     bool m_isInit;
+    CSJLogger *m_pLogger;
 };
 
 using CSJSpGLRenderWidget = std::shared_ptr<CSJSceneEngine>;
