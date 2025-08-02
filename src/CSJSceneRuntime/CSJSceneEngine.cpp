@@ -7,8 +7,7 @@
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-#include "glm/fwd.hpp"
-#include "glm/gtx/hash.hpp"
+#include "core/math/coordinate_definitions.h"
 
 #include "stbi/stb_image.h"
 #include "tinyobjloader/tiny_obj_loader.h"
