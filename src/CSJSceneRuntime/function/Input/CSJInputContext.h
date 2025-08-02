@@ -1,0 +1,4 @@
+#ifndef __CSJINPUTCONTEXT_H__
+#define __CSJINPUTCONTEXT_H__
+
+#endif // __CSJINPUTCONTEXT_H__

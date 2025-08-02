@@ -7,7 +7,7 @@
 #include <QVulkanDeviceFunctions>
 #include <vulkan/vulkan_core.h>
 
-#include "CSJGLRender/CSJGLSceneBase.h"
+//#include "CSJGLRender/CSJGLSceneBase.h"
 
 class CSJLogger;
 
@@ -51,7 +51,6 @@ protected:
     VkFormat findDepthFormat();
     void createDepthResources();
     void releaseDepthResources();
-
 
     void createMainRenderPass();
 

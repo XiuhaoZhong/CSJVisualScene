@@ -15,6 +15,8 @@
 
 #include "Utils/CSJLogger.h"
 
+#include "function/render/render_system.h"
+
 static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::string MODEL_PATH = "resources/models/viking_room.obj";
@@ -111,6 +113,9 @@ void CSJSceneEngine::initResources() {
     VkDevice device = m_pWindow->device();
     m_pFunctions = m_pWindow->vulkanInstance()->deviceFunctions(device);
     m_pVulkanFunctions = m_pWindow->vulkanInstance()->functions();
+
+    CSJEngine::CSJRenderSystem render_system;
+    render_system.initialize(m_pWindow->device());
 
     std::vector<tinyobj::shape_t> shapes;
     if (shapes.size() > 0) {
