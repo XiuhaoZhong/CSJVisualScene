@@ -101,12 +101,10 @@ bool CSJRenderSystem::isInit() {
     return m_init;
 }
 
-bool CSJRenderSystem::initialize(VkDevice device) {
+bool CSJRenderSystem::initialize() {
     if (m_init) {
         return true;
     }
-
-    m_rendererContext.device = device;
 
     m_init = true;
     loadModels();
@@ -747,7 +745,7 @@ void CSJRenderSystem::createMainRenderPass() {
 void CSJRenderSystem::drawImage(VkCommandBuffer commandBuffer, double timeStamp, int index) {
     updateUniformBuffer(index);
 
-    VkClearColorValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    VkClearColorValue clearColor = {1.0f, 0.0f, 1.0f, 1.0f};
     VkClearDepthStencilValue clearDS = {1, 0};
 
     VkClearValue clearValues[2];
@@ -770,7 +768,7 @@ void CSJRenderSystem::drawImage(VkCommandBuffer commandBuffer, double timeStamp,
     VkViewport viewPort{};
     viewPort.x = viewPort.y = 0;
     viewPort.width = m_rendererContext.swapChainInfo.swapChainWidth;
-    viewPort.height = m_rendererContext.swapChainInfo.swapChainWidth;
+    viewPort.height = m_rendererContext.swapChainInfo.swapChainHeight;
     viewPort.minDepth = 0;
     viewPort.maxDepth = 1;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewPort);

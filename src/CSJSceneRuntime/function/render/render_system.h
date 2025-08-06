@@ -56,7 +56,7 @@ public:
     ~CSJRenderSystem();
 
     bool isInit();
-    bool initialize(VkDevice device);
+    bool initialize();
     void updateRenderSystemContext(CSJRenderSystemContext& renderSystemContext);
     void updateSwapChainInfo(CSJSwapChainInfo& swapChainInfo);
 
