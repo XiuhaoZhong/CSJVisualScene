@@ -7,9 +7,11 @@
 #include <QVulkanDeviceFunctions>
 #include <vulkan/vulkan_core.h>
 
-//#include "CSJGLRender/CSJGLSceneBase.h"
-
 class CSJLogger;
+
+namespace CSJEngine {
+    class CSJRuntimeContext;
+}
 
 class CSJSceneEngine : public QVulkanWindowRenderer {
 public:
@@ -115,6 +117,8 @@ private:
     VkImageView                  m_depth_image_view;    
 
     VkRenderPass                 m_main_render_pass;
+
+    CSJEngine::CSJRuntimeContext *m_pGlobalContext;
 
     bool m_isInit;
     CSJLogger *m_pLogger;

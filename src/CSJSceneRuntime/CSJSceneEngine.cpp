@@ -7,14 +7,15 @@
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-#include "core/math/coordinate_definitions.h"
-
-#include "stbi/stb_image.h"
-#include "tinyobjloader/tiny_obj_loader.h"
+// #include "stbi/stb_image.h"
+// #include "tinyobjloader/tiny_obj_loader.h"
 
 #include "Utils/CSJLogger.h"
 
-#include "function/render/render_system.h"
+#include "CSJSceneRuntime/core/math/coordinate_definitions.h"
+#include "CSJSceneRuntime/function/global/CSJRuntimeContext.h"
+
+using namespace CSJEngine;
 
 static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -97,7 +98,8 @@ std::vector<uint32_t> obj_indices;
 
 CSJSceneEngine::CSJSceneEngine(QVulkanWindow* window)
     : m_pWindow(window)
-    , m_pLogger(CSJLogger::getLoggerInst()) {
+    , m_pLogger(CSJLogger::getLoggerInst())
+    , m_pGlobalContext(CSJRuntimeContext::getRuntimeContextInstance()) {
     
     m_isInit = false;
 }
@@ -109,40 +111,88 @@ CSJSceneEngine::~CSJSceneEngine() {
 void CSJSceneEngine::initResources() {
     m_pLogger->log_info("initResources!");
 
+    bool ret = m_pGlobalContext->initialize();
+    if (!ret) {
+        m_pLogger->log_error("CSJRuntimeContext initialize failed!");
+    } else {
+        m_pLogger->log_error("CSJRuntimeContext initialize successfuly!");
+    }
+
     VkDevice device = m_pWindow->device();
     m_pFunctions = m_pWindow->vulkanInstance()->deviceFunctions(device);
     m_pVulkanFunctions = m_pWindow->vulkanInstance()->functions();
 
-    CSJEngine::CSJRenderSystem render_system;
-    render_system.initialize(m_pWindow->device());
+    // set the vulkan instances into render system.
+    // CSJRenderSystemContext render_system_ctx = {
+    //     {m_pWindow->swapChainImageCount(),m_pWindow->swapChainImageSize().width(), m_pWindow->swapChainImageSize().height()},
+    //     m_pWindow->graphicsQueue(),
+    //     m_pWindow->graphicsCommandPool(),
+    //     m_pWindow->currentCommandBuffer(),
+    //     m_pWindow->colorFormat(),
+    //     m_pWindow->device(),
+    //     m_pWindow->physicalDevice()
+    // };
 
-    std::vector<tinyobj::shape_t> shapes;
-    if (shapes.size() > 0) {
-        m_pLogger->log_info("Read shape!");
-    } else {
-        m_pLogger->log_info("There aren't any shapes!");
-    }
+    // m_pGlobalContext->getRenderSystem()->updateRenderSystemContext(render_system_ctx);
+    // m_pGlobalContext->getRenderSystem()->initialize(device);
+
+    // std::vector<tinyobj::shape_t> shapes;
+    // if (shapes.size() > 0) {
+    //     m_pLogger->log_info("Read shape!");
+    // } else {
+    //     m_pLogger->log_info("There aren't any shapes!");
+    // }
 }
 
 void CSJSceneEngine::initSwapChainResources() {
     m_pLogger->log_info("initSwapChainReousrces!");
     m_max_frames_in_flight = m_pWindow->swapChainImageCount();
 
-    if (!m_isInit) {
-        loadModels();
-        createImageResources();
-        m_isInit = true;
+    // if (!m_isInit) {
+    //     loadModels();
+    //     createImageResources();
+    //     m_isInit = true;
+    // }
+    if (!m_pGlobalContext->getRenderSystem()->isInit()) {
+        CSJRenderSystemContext render_system_ctx = {
+        {m_pWindow->swapChainImageCount(),m_pWindow->swapChainImageSize().width(), m_pWindow->swapChainImageSize().height()},
+        m_pWindow->graphicsQueue(),
+        m_pWindow->graphicsCommandPool(),
+        m_pWindow->currentCommandBuffer(),
+        m_pWindow->colorFormat(),
+        m_pWindow->device(),
+        m_pWindow->physicalDevice()
+        };
+
+        m_pGlobalContext->getRenderSystem()->updateRenderSystemContext(render_system_ctx);
+        m_pGlobalContext->getRenderSystem()->initialize(m_pWindow->device());
     }
 
-    createDepthResources();
-    createFramebuffers();
+    CSJSwapChainInfo swapSize = {m_pWindow->swapChainImageSize().width(), 
+                                 m_pWindow->swapChainImageSize().height()};
+
+    m_pGlobalContext->getRenderSystem()->updateSwapChainInfo(swapSize);
+
+    int swapChainImageCount = m_pWindow->swapChainImageCount();
+    m_framebuffers.resize(swapChainImageCount);
+    std::vector<VkImageView> swapFrameBuffers(swapChainImageCount);
+
+    for (size_t i = 0; i < swapChainImageCount; i++) {
+        swapFrameBuffers[i] = m_pWindow->swapChainImageView(i);
+    }
+    m_pGlobalContext->getRenderSystem()->loadDepthAndFrameBuffers(swapFrameBuffers);
+
+    // createDepthResources();
+    // createFramebuffers();
 }
 
 void CSJSceneEngine::releaseSwapChainResources() {
     m_pLogger->log_info("releaseSwapChainResources!");
 
-    releaseFramebuffers();
-    releaseDepthResources();
+    m_pGlobalContext->getRenderSystem()->releaseDepthAndFrameBuffers();
+    
+    // releaseFramebuffers();
+    // releaseDepthResources();
 }
 
 void CSJSceneEngine::releaseResources() {
@@ -422,10 +472,10 @@ void CSJSceneEngine::createImageRenderPipeline() {
 }
 
 void CSJSceneEngine::createFramebuffers() {
-    int swapChainSize = m_pWindow->swapChainImageCount();
-    m_framebuffers.resize(swapChainSize);
+    int swapChainInfo = m_pWindow->swapChainImageCount();
+    m_framebuffers.resize(swapChainInfo);
 
-    for (size_t i = 0; i < swapChainSize; i++) {
+    for (size_t i = 0; i < swapChainInfo; i++) {
         std::array<VkImageView, 2> attachments = {
             m_pWindow->swapChainImageView(i),
             m_depth_image_view
@@ -691,92 +741,92 @@ void CSJSceneEngine::createIndexBuffer() {
 
 void CSJSceneEngine::createTextureImage() {
     // resources/originImages/slamDumk_images/cross_street.jpeg
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
+    // int texWidth, texHeight, texChannels;
+    // stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    // if (!pixels) {
+    //     throw std::runtime_error("failed to load texture image!");
+    // }
 
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+    // VkDeviceSize imageSize = texWidth * texHeight * 4;
+    // m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 stagingBuffer, stagingBufferMemory);
+    // VkBuffer stagingBuffer;
+    // VkDeviceMemory stagingBufferMemory;
+    // createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+    //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    //              stagingBuffer, stagingBufferMemory);
 
-    void* data;
-    m_pFunctions->vkMapMemory(m_pWindow->device(), stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    m_pFunctions->vkUnmapMemory(m_pWindow->device(), stagingBufferMemory);
-    stbi_image_free(pixels);
+    // void* data;
+    // m_pFunctions->vkMapMemory(m_pWindow->device(), stagingBufferMemory, 0, imageSize, 0, &data);
+    // memcpy(data, pixels, static_cast<size_t>(imageSize));
+    // m_pFunctions->vkUnmapMemory(m_pWindow->device(), stagingBufferMemory);
+    // stbi_image_free(pixels);
 
-    createImage(texWidth, texHeight, m_mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-                m_image_texture_image, m_image_texture_image_memory);
+    // createImage(texWidth, texHeight, m_mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    //             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+    //             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+    //             m_image_texture_image, m_image_texture_image_memory);
 
-    transitionImageLayout(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, 
-                          VK_IMAGE_LAYOUT_UNDEFINED, 
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
-    copyBufferToImage(stagingBuffer, m_image_texture_image, 
-                      static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    transitionImageLayout(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, 
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
+    // transitionImageLayout(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, 
+    //                       VK_IMAGE_LAYOUT_UNDEFINED, 
+    //                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
+    // copyBufferToImage(stagingBuffer, m_image_texture_image, 
+    //                   static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    // transitionImageLayout(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, 
+    //                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    //                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
 
-    m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
-    m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
+    // m_pFunctions->vkDestroyBuffer(m_pWindow->device(), stagingBuffer, nullptr);
+    // m_pFunctions->vkFreeMemory(m_pWindow->device(), stagingBufferMemory, nullptr);
 
-    generateMipmaps(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
+    // generateMipmaps(m_image_texture_image, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
 }
 
 void CSJSceneEngine::loadModels() {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
+    // tinyobj::attrib_t attrib;
+    // std::vector<tinyobj::shape_t> shapes;
+    // std::vector<tinyobj::material_t> materials;
 
-    std::string warn, err;
+    // std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-        throw std::runtime_error(warn + err);
-    }
+    // if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+    //     throw std::runtime_error(warn + err);
+    // }
 
-    std::unordered_map<Vertex, uint32_t> uniqueVerteices{};
+    // std::unordered_map<Vertex, uint32_t> uniqueVerteices{};
 
-    for (const auto &shape : shapes) {
-        for (const auto &index : shape.mesh.indices) {
-            Vertex vertex{};
+    // for (const auto &shape : shapes) {
+    //     for (const auto &index : shape.mesh.indices) {
+    //         Vertex vertex{};
 
-            vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
+    //         vertex.pos = {
+    //             attrib.vertices[3 * index.vertex_index + 0],
+    //             attrib.vertices[3 * index.vertex_index + 1],
+    //             attrib.vertices[3 * index.vertex_index + 2]
+    //         };
 
-            vertex.texCoord = {
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                (1.0f - attrib.texcoords[2 * index.texcoord_index + 1])
-            };
+    //         vertex.texCoord = {
+    //             attrib.texcoords[2 * index.texcoord_index + 0],
+    //             (1.0f - attrib.texcoords[2 * index.texcoord_index + 1])
+    //         };
 
-            vertex.color = {1.0f, 1.0f, 1.0f};
+    //         vertex.color = {1.0f, 1.0f, 1.0f};
 
-            if (uniqueVerteices.count(vertex) == 0) {
-                uniqueVerteices[vertex] = static_cast<uint32_t>(obj_verteices.size());
-                obj_verteices.push_back(vertex);
-            }
+    //         if (uniqueVerteices.count(vertex) == 0) {
+    //             uniqueVerteices[vertex] = static_cast<uint32_t>(obj_verteices.size());
+    //             obj_verteices.push_back(vertex);
+    //         }
 
-            obj_indices.push_back(uniqueVerteices[vertex]);
-            //obj_verteices.push_back(vertex);
-            //obj_indices.push_back(indices.size());
-        }
-    }
+    //         obj_indices.push_back(uniqueVerteices[vertex]);
+    //         //obj_verteices.push_back(vertex);
+    //         //obj_indices.push_back(indices.size());
+    //     }
+    // }
 
-    // without index, the vertex total number is 11484!
-    std::cout << "*******************************************" << std::endl;
-    std::cout << "Model loading compeleted, total vertex number: " << obj_verteices.size() << std::endl;
-    std::cout << "*******************************************" << std::endl;
+    // // without index, the vertex total number is 11484!
+    // std::cout << "*******************************************" << std::endl;
+    // std::cout << "Model loading compeleted, total vertex number: " << obj_verteices.size() << std::endl;
+    // std::cout << "*******************************************" << std::endl;
 }
 
 void CSJSceneEngine::createImageResources() {
@@ -818,16 +868,19 @@ void CSJSceneEngine::releaseImageResources() {
 }
 
 void CSJSceneEngine::startNextFrame() {
-    VkDevice device = m_pWindow->device();
-    VkCommandBuffer commandBuffer = m_pWindow->currentCommandBuffer();
+    // VkDevice device = m_pWindow->device();
+    // VkCommandBuffer commandBuffer = m_pWindow->currentCommandBuffer();
 
-    drawImage(commandBuffer, m_pWindow->currentSwapChainImageIndex());
+    //drawImage(commandBuffer, m_pWindow->currentSwapChainImageIndex());
+    
 
     /*************************************************/
     /* tick circle                                   */
     /* logic tick                                    */
     /* render tick                                   */
     /*************************************************/
+    m_pGlobalContext->getRenderSystem()->render_tick(m_pWindow->currentCommandBuffer(), 0.0, m_pWindow->currentSwapChainImageIndex());
+
 
     m_pWindow->frameReady();
     m_pWindow->requestUpdate();
