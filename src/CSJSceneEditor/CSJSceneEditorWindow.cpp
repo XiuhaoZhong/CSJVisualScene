@@ -9,6 +9,8 @@
 #include "CSJSceneRuntime/CSJSceneEngine.h"
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 
+using namespace CSJEngine;
+
 CSJSpSceneRenderWindow CSJSceneEditorWindow::createSceneRenderWindow() {
     return std::make_shared<CSJSceneEditorWindow>();
 }

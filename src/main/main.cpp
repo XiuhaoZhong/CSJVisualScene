@@ -14,6 +14,8 @@
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 #include "CSJSceneRuntime/CSJSceneRuntimeData.h"
 
+using namespace CSJEngine;
+
 void runGameSceneDirectly();
 
 int main(int argc, char *argv[]) {

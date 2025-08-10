@@ -2,6 +2,8 @@
 
 #include "CSJModelImporter.h"
 
+namespace CSJEngine {
+
 CSJRenderMesh CSJAssetManager::loadMeshFromFile(std::string& filePath) {
     CSJRenderMesh renderMesh;
 
@@ -28,3 +30,5 @@ CSJRenderMesh CSJAssetManager::loadMeshFromFile(std::string& filePath) {
 CSJRenderMaterial CSJAssetManager::loadMaterialFromFile(std::string& filePath) {
     return CSJRenderMaterial();
 }
+
+} // namespace CSJEngine

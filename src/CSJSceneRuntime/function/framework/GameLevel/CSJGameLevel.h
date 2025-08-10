@@ -7,6 +7,8 @@
 
 #include "CSJSceneRuntime/function/framework/Object/CSJObject.h"
 
+namespace CSJEngine{
+
 using GameLevelObjects = std::unordered_map<CSJObjectID, CSJSpObject>;
 
 class CSJGameLevel {
@@ -33,5 +35,7 @@ private:
 };
 
 using CSJSpGameLevel = std::shared_ptr<CSJGameLevel>;
+
+} // namespace CSJEngine
 
 #endif // __CSJGAMELEVEL_H__

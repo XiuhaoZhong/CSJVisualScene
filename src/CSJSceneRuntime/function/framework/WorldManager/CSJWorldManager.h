@@ -1,8 +1,13 @@
 #ifndef __CSJWORLDMANAGER_H__
 #define __CSJWORLDMANAGER_H__
 
-#include "CSJGameLevel.h"
+#include <string>
+#include <memory>
+#include <unordered_map>
 
+namespace CSJEngine {
+
+class CSJGameLevel;
 using GameLevels = std::unordered_map<std::string, std::shared_ptr<CSJGameLevel>>;
 
 /**
@@ -47,10 +52,11 @@ protected:
     void loadDefaultLevel();
 
 private:
-    bool           m_bIsWorldLoaded = false;
+    bool                          m_bIsWorldLoaded = false;
     
-    GameLevels     m_levels;
-    CSJSpGameLevel m_current_level;
+    GameLevels                    m_levels;
+    std::shared_ptr<CSJGameLevel> m_current_level;
 };
 
+} // namespace CSJEngine
 #endif // __CSJWORLDMANAGER_H__

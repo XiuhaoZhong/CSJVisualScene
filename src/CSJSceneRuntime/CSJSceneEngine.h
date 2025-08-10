@@ -10,8 +10,8 @@
 class CSJLogger;
 
 namespace CSJEngine {
-    class CSJRuntimeContext;
-}
+
+class CSJRuntimeContext;
 
 class CSJSceneEngine : public QVulkanWindowRenderer {
 public:
@@ -32,5 +32,7 @@ private:
 };
 
 using CSJSpGLRenderWidget = std::shared_ptr<CSJSceneEngine>;
+
+} // namespace CSJEngine
 
 #endif // __CSJSCENEENGINE_H__

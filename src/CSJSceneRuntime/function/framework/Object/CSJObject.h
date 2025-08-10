@@ -7,6 +7,8 @@
 #include "CSJObjectIDAlloc.h"
 #include "CSJSceneRuntime/function/framework/Component/CSJComponent.h"
 
+namespace CSJEngine {
+
 class CSJObject {
 public:
     CSJObject();
@@ -30,5 +32,7 @@ private:
 };
 
 using CSJSpObject = std::shared_ptr<CSJObject>;
+
+} // namespace CSJEngine
 
 #endif // __CSJOBJECT_H__

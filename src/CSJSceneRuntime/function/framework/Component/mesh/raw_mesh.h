@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace CSJEngine {
+
 enum class PrimitiveType {
     point,
     line,
@@ -21,8 +23,8 @@ struct RawVertexBuffer {
 };
 
 struct RawIndexBuffer {
-    PrimitiveType primitive_type = PrimitiveType::triangle;
-    uint32_t primitive_count = 0;
+    PrimitiveType         primitive_type = PrimitiveType::triangle;
+    uint32_t              primitive_count = 0;
     std::vector<uint32_t> indices;
 };
 
@@ -34,8 +36,10 @@ struct MaterialTexture {
 
 struct StaticMeshData {
     RawVertexBuffer vertex_buffer;
-    RawIndexBuffer index_buffer;
+    RawIndexBuffer  index_buffer;
     MaterialTexture material_texture;
 };
+
+} // namespace CSJEngine 
 
 #endif // __RAWMESH_H__

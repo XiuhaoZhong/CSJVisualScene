@@ -9,6 +9,8 @@
 #include "CSJSceneRuntime/CSJSceneEngine.h"
 #include "CSJSceneRuntime/CSJSceneEngineWindow.h"
 
+using namespace CSJEngine;
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
     initUI();

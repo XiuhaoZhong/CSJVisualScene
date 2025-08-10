@@ -3,6 +3,8 @@
 
 #include <QVulkanWindow>
 
+namespace CSJEngine {
+
 class CSJSceneRumtimeData {
 public:
     static void setVulkanInstance(QVulkanInstance *instance) {
@@ -16,4 +18,5 @@ private:
     static QVulkanInstance *m_pVulkanInstance;
 };
 
+} // namespace CSJEngine
 #endif // __CSJSCENERUNTIMEDATA_H__

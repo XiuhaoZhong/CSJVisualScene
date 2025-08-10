@@ -1,5 +1,7 @@
 #include "CSJGameLevel.h"
 
+namespace CSJEngine {
+
 CSJGameLevel::CSJGameLevel() {
 }
 
@@ -20,4 +22,6 @@ void CSJGameLevel::tick(float delta_time) {
 
         // TODO: physical engine tick;
     }
+}
+
 }

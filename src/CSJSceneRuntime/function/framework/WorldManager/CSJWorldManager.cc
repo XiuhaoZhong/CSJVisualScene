@@ -1,5 +1,9 @@
 #include "CSJWorldManager.h"
 
+#include "CSJSceneRuntime/function/framework/GameLevel/CSJGameLevel.h"
+
+namespace CSJEngine {
+
 CSJWorldManager::CSJWorldManager() {
 }
 
@@ -37,3 +41,5 @@ void CSJWorldManager::deleteLevel(std::string level_name) {
 void CSJWorldManager::releaseAllLevels() {
 
 }
+
+} // namespace CSJEngine

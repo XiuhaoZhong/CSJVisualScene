@@ -5,6 +5,8 @@
 #include "CSJSceneEngine.h"
 #include "CSJSceneRuntimeData.h"
 
+namespace CSJEngine {
+
 CSJSceneEngineWindow::CSJSceneEngineWindow(QWindow *parent)
     : QVulkanWindow(parent)
     , m_pLogger(CSJLogger::getLoggerInst()) {
@@ -38,3 +40,5 @@ void CSJSceneEngineWindow::keyReleaseEvent(QKeyEvent *event) {
 void CSJSceneEngineWindow::wheelEvent(QWheelEvent *event) {
     m_pLogger->log_info("CSJSceneEngineWindow::wheelEvent!");
 }
+
+} // namespace CSJEngine

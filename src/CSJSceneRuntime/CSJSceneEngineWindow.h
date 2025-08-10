@@ -5,6 +5,8 @@
 
 class CSJLogger;
 
+namespace CSJEngine {
+
 class CSJSceneEngineWindow : public QVulkanWindow {
      Q_OBJECT
 public:
@@ -22,5 +24,7 @@ protected:
 private:
     CSJLogger *m_pLogger;
 };
+
+} // namespace CSJEngine
 
 #endif // __CSJSCENEENGINEWINDOW_H__

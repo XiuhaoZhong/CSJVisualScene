@@ -11,7 +11,7 @@
 #include "CSJSceneRuntime/core/math/coordinate_definitions.h"
 #include "CSJSceneRuntime/function/global/CSJRuntimeContext.h"
 
-using namespace CSJEngine;
+namespace CSJEngine {
 
 CSJSceneEngine::CSJSceneEngine(QVulkanWindow* window)
     : m_pWindow(window)
@@ -90,3 +90,5 @@ void CSJSceneEngine::startNextFrame() {
     m_pWindow->frameReady();
     m_pWindow->requestUpdate();
 }
+
+} // namespace CSJEngine

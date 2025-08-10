@@ -1,5 +1,7 @@
 #include "CSJObjectIDAlloc.h"
 
+namespace CSJEngine {
+
 std::atomic<CSJObjectID> CSJObjectIDAlloc::m_next_id {0};
 
 CSJObjectID CSJObjectIDAlloc::alloc() {
@@ -11,3 +13,5 @@ CSJObjectID CSJObjectIDAlloc::alloc() {
 
     return new_object_ret;
 }
+
+} // namespace CSJEngine

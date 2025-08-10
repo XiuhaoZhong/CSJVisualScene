@@ -1,11 +1,13 @@
 #ifndef __MESHCOMPONENT_H__
 #define __MESHCOMPONENT_H__
 
-#include "CSJComponent.h"
-
 #include <vector>
 
+#include "CSJSceneRuntime/function/framework/Component/CSJComponent.h"
+#include "CSJSceneRuntime/resource/resource_type/components/mesh_type.h"
 #include "CSJSceneRuntime/function/framework/render/RenderObjects.h"
+
+namespace CSJEngine {
 
 class MeshComponent : public CSJComponent {
 public:
@@ -16,7 +18,10 @@ public:
     void loadResource(std::weak_ptr<CSJObject> parent_object) override;
 
 private:
-    std::vector<GameObjPartDesc> m_raw_meshes;
+    MeshComponentRes             m_meshRes;
+    std::vector<GameObjPartDesc> m_rawMeshes;
 };
+
+} // namespace CSJEngine
 
 #endif // __MESHCOMPONENT_H__

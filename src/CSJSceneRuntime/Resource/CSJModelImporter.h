@@ -6,6 +6,8 @@
 
 #include "glm/glm.hpp"
 
+namespace CSJEngine {
+
 class CSJRenderShapeModel {
 public:
     CSJRenderShapeModel();
@@ -42,4 +44,5 @@ private:
     std::vector<float> m_vNormalVals;
 };
 
+} // namespace CSJEngine
 #endif // __CSJMODELIMPORTER_H__

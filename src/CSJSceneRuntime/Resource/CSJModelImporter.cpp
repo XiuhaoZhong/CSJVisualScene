@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace CSJEngine {
+
 CSJRenderShapeModel::CSJRenderShapeModel() {
 
 }
@@ -122,3 +124,5 @@ std::vector<float> CSJModelImporter::getTexCoords() {
 std::vector<float> CSJModelImporter::getNormals() {
     return m_vNormals;
 }
+
+} // namespace CSJEngine
