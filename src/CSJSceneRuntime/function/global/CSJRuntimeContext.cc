@@ -1,5 +1,8 @@
 #include "CSJRuntimeContext.h"
 
+#include "CSJSceneRuntime/function/render/render_system.h"
+#include "CSJSceneRuntime/function/framework/WorldManager/CSJWorldManager.h"
+
 namespace CSJEngine {
 
 CSJRuntimeContext *CSJEngine::CSJRuntimeContext::getRuntimeContextInstance() {
@@ -9,7 +12,8 @@ CSJRuntimeContext *CSJEngine::CSJRuntimeContext::getRuntimeContextInstance() {
 
 bool CSJRuntimeContext::initialize() {
 
-    m_render_system = std::make_shared<CSJRenderSystem>();
+    m_renderSystem = std::make_shared<CSJRenderSystem>();
+    m_worldManager = std::make_shared<CSJWorldManager>();
 
     return true;
 }

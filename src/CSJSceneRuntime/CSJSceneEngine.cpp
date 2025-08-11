@@ -10,6 +10,7 @@
 #include "Utils/CSJLogger.h"
 #include "CSJSceneRuntime/core/math/coordinate_definitions.h"
 #include "CSJSceneRuntime/function/global/CSJRuntimeContext.h"
+#include "CSJSceneRuntime/function/render/render_system.h"
 
 namespace CSJEngine {
 
@@ -83,12 +84,27 @@ void CSJSceneEngine::startNextFrame() {
     /* logic tick                                    */
     /* render tick                                   */
     /*************************************************/
+    float delta_time = calculateDeltaTime();
     m_pGlobalContext->getRenderSystem()->render_tick(m_pWindow->currentCommandBuffer(), 
-                                                     0.0, 
+                                                     delta_time, 
                                                      m_pWindow->currentSwapChainImageIndex());
 
     m_pWindow->frameReady();
     m_pWindow->requestUpdate();
+}
+
+float CSJSceneEngine::calculateDeltaTime() {
+    float delta_time = 0.0;
+    {
+        using namespace std::chrono;
+        steady_clock::time_point current_tick_time = steady_clock::now();
+        duration<float> time_span = duration_cast<duration<float>>(current_tick_time - m_last_tick_time);
+        delta_time = time_span.count();
+
+        m_last_tick_time = current_tick_time;
+    }
+
+    return delta_time;
 }
 
 } // namespace CSJEngine

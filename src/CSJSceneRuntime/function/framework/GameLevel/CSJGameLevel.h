@@ -27,6 +27,8 @@ public:
         return m_bIsSave;
     }
 
+    void loadLevel();
+
 private:
     std::string m_name;
     bool        m_bIsSave = false;

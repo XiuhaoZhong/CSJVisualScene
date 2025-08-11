@@ -6,6 +6,7 @@ CSJGameLevel::CSJGameLevel() {
 }
 
 CSJGameLevel::~CSJGameLevel() {
+    
 }
 
 void CSJGameLevel::tick(float delta_time) {
@@ -22,6 +23,10 @@ void CSJGameLevel::tick(float delta_time) {
 
         // TODO: physical engine tick;
     }
+}
+
+void CSJGameLevel::loadLevel() {
+
 }
 
 }

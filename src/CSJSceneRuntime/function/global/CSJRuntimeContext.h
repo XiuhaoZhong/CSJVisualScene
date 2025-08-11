@@ -3,9 +3,10 @@
 
 #include <memory>
 
-#include "CSJSceneRuntime/function/render/render_system.h"
-
 namespace CSJEngine {
+
+class CSJRenderSystem;
+class CSJWorldManager;
 
 class CSJRuntimeContext {
 public:
@@ -16,14 +17,15 @@ public:
     bool initialize();
 
     std::shared_ptr<CSJRenderSystem> getRenderSystem() {
-        return m_render_system;
+        return m_renderSystem;
     }
 
 protected:
 
 
 private:
-    std::shared_ptr<CSJRenderSystem> m_render_system;
+    std::shared_ptr<CSJRenderSystem> m_renderSystem;
+    std::shared_ptr<CSJWorldManager> m_worldManager;
 
 };
 

@@ -1,6 +1,7 @@
 #ifndef __CSJSCENEENGINE_H__
 #define __CSJSCENEENGINE_H__
 
+#include <chrono>
 #include <memory>
 
 #include <QVulkanWindow>
@@ -25,10 +26,14 @@ public:
 
     void startNextFrame() override;
 
+protected:
+    float calculateDeltaTime();
+
 private:
-    CSJLogger                    *m_pLogger;
-    QVulkanWindow                *m_pWindow;
-    CSJEngine::CSJRuntimeContext *m_pGlobalContext;
+    CSJLogger         *m_pLogger;
+    QVulkanWindow     *m_pWindow;
+    CSJRuntimeContext *m_pGlobalContext;
+    std::chrono::steady_clock::time_point m_last_tick_time;
 };
 
 using CSJSpGLRenderWidget = std::shared_ptr<CSJSceneEngine>;

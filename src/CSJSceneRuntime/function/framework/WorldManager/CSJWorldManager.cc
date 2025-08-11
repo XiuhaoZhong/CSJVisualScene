@@ -5,6 +5,7 @@
 namespace CSJEngine {
 
 CSJWorldManager::CSJWorldManager() {
+    loadDefaultLevel();
 }
 
 CSJWorldManager::~CSJWorldManager() {
@@ -12,6 +13,16 @@ CSJWorldManager::~CSJWorldManager() {
 
 void CSJWorldManager::initializeWorld() {
 
+}
+
+void CSJWorldManager::loadDefaultLevel() {
+    // Load a default level to test the functionality.
+    if (m_current_level) {
+        return ;
+    }
+
+    m_current_level = std::make_shared<CSJGameLevel>();
+    m_current_level->loadLevel();
 }
 
 void CSJWorldManager::tick(float delta_time) {
